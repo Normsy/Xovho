@@ -1,9 +1,12 @@
---// NORMS Main Script (UI Background & Loading Bypass Only)
+--// NORMS Main Script (Fully Combined, Integrated & Free Run)
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
+local Lighting = game:GetService("Lighting")
 
 local player = Players.LocalPlayer
 
@@ -19,10 +22,41 @@ end
 -- =====================
 -- CONFIG
 -- =====================
+
+-- Bot State Control (All features enabled by default for free running)
 local BotState = {
     Running = true,
-    StartTime = os.time()
+    StartTime = os.time(),
+
+    AutoBuySeeds = true,
+    AutoBuyGears = true
 }
+
+-- =====================
+-- NETWORKING HELPER
+-- =====================
+local Networking = {}
+
+function Networking.fire(path, ...)
+    local args = {...}
+    local argc = select("#", ...)
+    pcall(function()
+        local shared = ReplicatedStorage:WaitForChild("SharedModules", 5)
+        local netModule = shared and shared:WaitForChild("Networking", 5)
+        if netModule then
+            local net = require(netModule)
+            local current = net
+            for segment in string.gmatch(path, "[^%.]+") do
+                if type(current) == "table" then current = current[segment] end
+            end
+            if current and type(current) == "table" and current.fire then
+                current:fire(unpack(args, 1, argc))
+            elseif current and current.Fire then
+                current:Fire(unpack(args, 1, argc))
+            end
+        end
+    end)
+end
 
 -- =====================
 -- UI & VISUAL SETUP
@@ -107,6 +141,110 @@ task.spawn(function()
 end)
 
 -- =====================
+-- OPTIMIZERS & PERFORMANCE
+-- =====================
+pcall(function()
+    setfpscap(15)
+end)
+
+pcall(function()
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    Lighting.Brightness = 2
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v:IsA("PostEffect") or v:IsA("Sky") then
+            v:Destroy()
+        end
+    end
+end)
+
+-- Continuous Low-Lag Booster (Clearing particles, textures, and heavy assets)
+task.spawn(function()
+    while BotState.Running do
+        pcall(function()
+            for _, v in ipairs(Workspace:GetDescendants()) do
+                if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
+                    v:Destroy()
+                elseif v:IsA("BasePart") then
+                    v.Material = Enum.Material.SmoothPlastic
+                    v.CastShadow = false
+                end
+            end
+        end)
+        task.wait(10)
+    end
+end)
+
+-- Instant and continuous cleanup for Workspace.Gardens and Map folders
+task.spawn(function()
+    while BotState.Running do
+        pcall(function()
+            local gardens = Workspace:FindFirstChild("Gardens")
+            if gardens then
+                gardens:Destroy()
+            end
+
+            local map = Workspace:FindFirstChild("Map")
+            if map then
+                for _, name in ipairs({"Garden", "Gardens", "GardenFolder"}) do
+                    local folder = map:FindFirstChild("Map"):FindFirstChild(name) or map:FindFirstChild(name)
+                    if folder then
+                        folder:Destroy()
+                    end
+                end
+            end
+        end)
+        task.wait(0.001)
+    end
+end)
+
+-- =====================
+-- AUTO-BUY SEEDS LOOP
+-- =====================
+task.spawn(function()
+    local seedShopFolder = ReplicatedStorage:WaitForChild("StockValues", 10) and ReplicatedStorage.StockValues:WaitForChild("SeedShop", 5) and ReplicatedStorage.StockValues.SeedShop:WaitForChild("Items", 5)
+    
+    while BotState.Running do
+        if BotState.AutoBuySeeds and seedShopFolder then
+            for _, seedInstance in ipairs(seedShopFolder:GetChildren()) do
+                if not BotState.Running or not BotState.AutoBuySeeds then break end
+                
+                local stock = seedInstance.Value
+                if stock > 0 or stock == -1 then
+                    local seedName = seedInstance.Name
+                    Networking.fire("SeedShop.PurchaseSeed", seedName)
+                    task.wait(0.15)
+                end
+            end
+        end
+        task.wait(1.5)
+    end
+end)
+
+-- =====================
+-- AUTO-BUY GEARS LOOP
+-- =====================
+task.spawn(function()
+    local gearShopFolder = ReplicatedStorage:WaitForChild("StockValues", 10) and ReplicatedStorage.StockValues:WaitForChild("GearShop", 5) and ReplicatedStorage.StockValues.GearShop:WaitForChild("Items", 5)
+    
+    while BotState.Running do
+        if BotState.AutoBuyGears and gearShopFolder then
+            for _, gearInstance in ipairs(gearShopFolder:GetChildren()) do
+                if not BotState.Running or not BotState.AutoBuyGears then break end
+                
+                local stock = gearInstance.Value
+                if stock > 0 or stock == -1 then
+                    local gearName = gearInstance.Name
+                    Networking.fire("GearShop.PurchaseGear", gearName)
+                    task.wait(0.15)
+                end
+            end
+        end
+        task.wait(2.5)
+    end
+end)
+
+-- =====================
 -- LOADING & BYPASS LOOP
 -- =====================
 task.spawn(function()
@@ -114,12 +252,18 @@ task.spawn(function()
         task.wait(0.001)
         
         pcall(function()
+            -- STOP LOADING STATE
+            local v10 = false
+            local v14 = true
+
+            -- CAMERA FIX
             local cam = Workspace.CurrentCamera
             if cam then
                 cam.CameraType = Enum.CameraType.Custom
                 cam.FieldOfView = 70
             end
 
+            -- UNANCHOR CHARACTER
             local char = player.Character
             if char then
                 local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -128,11 +272,13 @@ task.spawn(function()
                 end
             end
 
+            -- REMOVE LOADING UI
             local v16 = targetStorage:FindFirstChild("LoadingUI") or player:FindFirstChildOfClass("PlayerGui"):FindFirstChild("LoadingUI")
             if v16 then
                 v16:Destroy()
             end
 
+            -- RESTORE UI SYSTEM
             game:GetService("ProximityPromptService").Enabled = true
         end)
     end
