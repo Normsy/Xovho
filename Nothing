@@ -497,3 +497,155 @@ task.spawn(function()
         end)
     end
 end)
+
+
+---------------------------------------------------------------
+-- ANTI-AFK (Optimized with Optional Jumping & Performance Mode)
+---------------------------------------------------------------
+
+local AntiAfk = {
+    _running = false,
+    _thread = nil,
+    _idledConnection = nil,
+    _stats = {
+        actions = 0,
+        lastAction = 0
+    }
+}
+
+-- Services for Performance/Low CPU mode
+local Lighting = game:GetService("Lighting")
+local SoundService = game:GetService("SoundService")
+local RunService = game:GetService("RunService")
+
+local function applyPerformanceMode()
+    -- Lowest graphics
+    pcall(function()
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    end)
+
+    -- Disable shadows & adjust lighting
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 1e10
+    Lighting.Brightness = 1
+
+    -- Disable visual effects in Lighting
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v:IsA("PostEffect") 
+        or v:IsA("BloomEffect")
+        or v:IsA("BlurEffect")
+        or v:IsA("SunRaysEffect")
+        or v:IsA("ColorCorrectionEffect")
+        or v:IsA("DepthOfFieldEffect") then
+            v.Enabled = false
+        end
+    end
+
+    -- Remove particles, trails, and beams
+    for _, v in ipairs(workspace:GetDescendants()) do
+        if v:IsA("ParticleEmitter")
+        or v:IsA("Trail")
+        or v:IsA("Beam") then
+            v.Enabled = false
+        elseif v:IsA("BasePart") then
+            v.Material = Enum.Material.Plastic
+            v.Reflectance = 0
+        end
+    end
+
+    -- Mute sounds
+    SoundService.Volume = 0
+
+    -- Stop 3D rendering to save maximum CPU
+    pcall(function()
+        RunService:Set3dRenderingEnabled(false)
+    end)
+
+    print("[GAG Hub] Low CPU / Performance mode enabled")
+end
+
+function AntiAfk.start(config)
+    if AntiAfk._running then return end
+    AntiAfk._running = true
+
+    local interval = config and config.Timings and config.Timings.AntiAfkInterval or 60
+    local enableJump = config and config.Settings and config.Settings.AntiAfkJump ~= false
+    local enablePerformance = config and config.Settings and config.Settings.LowCPU ~= false
+
+    -- Apply performance optimizations if enabled
+    if enablePerformance then
+        pcall(applyPerformanceMode)
+    end
+
+    -- Main loop
+    AntiAfk._thread = task.spawn(function()
+        while AntiAfk._running do
+            pcall(function()
+                -- Method 1: VirtualUser click
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+
+            -- Method 2: Simulate movement (jumping) if enabled
+            if enableJump then
+                pcall(function()
+                    local character = LP.Character
+                    local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        humanoid.Jump = true
+                    end
+                end)
+            end
+
+            AntiAfk._stats.actions += 1
+            AntiAfk._stats.lastAction = os.time()
+            
+            task.wait(interval)
+        end
+    end)
+
+    -- Handle Roblox's native Idled event instantly
+    AntiAfk._idledConnection = LP.Idled:Connect(function()
+        pcall(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+        
+        if enableJump then
+            pcall(function()
+                local character = LP.Character
+                local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    humanoid.Jump = true
+                end
+            end)
+        end
+    end)
+
+    print("[GAG Hub] Anti-AFK started (interval: " .. interval .. "s, jump: " .. tostring(enableJump) .. ", low cpu: " .. tostring(enablePerformance) .. ")")
+end
+
+function AntiAfk.stop()
+    AntiAfk._running = false
+    
+    -- Re-enable 3D rendering when stopping if it was disabled
+    pcall(function()
+        RunService:Set3dRenderingEnabled(true)
+    end)
+    
+    if AntiAfk._thread then
+        task.cancel(AntiAfk._thread)
+        AntiAfk._thread = nil
+    end
+
+    if AntiAfk._idledConnection then
+        AntiAfk._idledConnection:Disconnect()
+        AntiAfk._idledConnection = nil
+    end
+
+    print("[GAG Hub] Anti-AFK stopped")
+end
+
+return AntiAfk
+
+
