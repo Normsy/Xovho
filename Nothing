@@ -1,3 +1,253 @@
-getgenv().SecretKey = "NORMS-5EA314FD79B045A6"
+print("Made By firedevil (Ryan | 404678244215029762 | https://discord.gg/ettP4TjbAb)")
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Normsy/NORMS/refs/heads/main/Main"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/fdvll/pet-simulator-99/main/waitForGameLoad.lua"))()
+
+repeat
+    task.wait()
+until game:IsLoaded()
+
+local Workspace = game:GetService("Workspace")
+local Terrain = Workspace:WaitForChild("Terrain")
+Terrain.WaterReflectance = 0
+Terrain.WaterTransparency = 1
+Terrain.WaterWaveSize = 0
+Terrain.WaterWaveSpeed = 0
+
+local Lighting = game:GetService("Lighting")
+Lighting.Brightness = 0
+Lighting.GlobalShadows = false
+Lighting.FogEnd = 9e100
+Lighting.FogStart = 0
+
+sethiddenproperty(Lighting, "Technology", 2)
+sethiddenproperty(Terrain, "Decoration", false)
+
+local function clearTextures(v)
+    if v:IsA("BasePart") and not v:IsA("MeshPart") then
+        v.Material = "Plastic"
+        v.Reflectance = 0
+    elseif (v:IsA("Decal") or v:IsA("Texture")) then
+        v.Transparency = 1
+    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+        v.Lifetime = NumberRange.new(0)
+    elseif v:IsA("Explosion") then
+        v.BlastPressure = 1
+        v.BlastRadius = 1
+    elseif v:IsA("Fire") or v:IsA("SpotLight") or v:IsA("Smoke") or v:IsA("Sparkles") then
+        v.Enabled = false
+    elseif v:IsA("MeshPart") then
+        v.Material = "Plastic"
+        v.Reflectance = 0
+        v.TextureID = 10385902758728957
+    elseif v:IsA("SpecialMesh")  then
+        v.TextureId = 0
+    elseif v:IsA("ShirtGraphic") then
+        v.Graphic = 1
+    elseif (v:IsA("Shirt") or v:IsA("Pants")) then
+        v[v.ClassName .. "Template"] = 1
+    elseif v.Name == "Foilage" and v:IsA("Folder") then
+        v:Destroy()
+    elseif string.find(v.Name, "Tree") or string.find(v.Name, "Water") or string.find(v.Name, "Bush") or string.find(v.Name, "grass") then
+        task.wait()
+        v:Destroy()
+    end
+end
+
+game:GetService("Lighting"):ClearAllChildren()
+
+for _, v in pairs(Workspace:GetDescendants()) do
+    clearTextures(v)
+end
+
+Workspace.DescendantAdded:Connect(function(v)
+    clearTextures(v)
+end)
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+
+-- Anti AFK Setup
+local VirtualUser = game:GetService("VirtualUser")
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new(0, 0))
+end)
+
+-- Toggle GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FiredevilToggleGui"
+ScreenGui.ResetOnSpawn = false
+
+pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0, 120, 0, 40)
+ToggleButton.Position = UDim2.new(0, 20, 0, 20)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 128)
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 16
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.Text = "Status: ON"
+ToggleButton.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 6)
+UICorner.Parent = ToggleButton
+
+getgenv().ScriptEnabled = true
+
+ToggleButton.MouseButton1Click:Connect(function()
+    getgenv().ScriptEnabled = not getgenv().ScriptEnabled
+    if getgenv().ScriptEnabled then
+        ToggleButton.Text = "Status: ON"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 128)
+    else
+        ToggleButton.Text = "Status: OFF"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    end
+end)
+
+local map
+local PlaceId = game.PlaceId
+if PlaceId == 8737899170 then
+    map = Workspace.Map
+elseif PlaceId == 16498369169 then
+    map = Workspace.Map2
+end
+
+local unfinished = true
+local currentZone
+
+require(ReplicatedStorage.Library.Client.PlayerPet).CalculateSpeedMultiplier = function(...)
+    return 200
+end
+
+local function teleportToMaxZone()
+    if not getgenv().ScriptEnabled then return end
+    local zoneName, maxZoneData = require(ReplicatedStorage.Library.Client.ZoneCmds).GetMaxOwnedZone()
+    while currentZone == zoneName and getgenv().ScriptEnabled do
+        zoneName, maxZoneData = require(ReplicatedStorage.Library.Client.ZoneCmds).GetMaxOwnedZone()
+        task.wait()
+    end
+    if not getgenv().ScriptEnabled then return end
+    currentZone = zoneName
+    print("Teleporting to zone: " .. zoneName)
+
+    local zonePath
+    for _, v in pairs(map:GetChildren()) do
+        if string.find(v.Name, tostring(maxZoneData.ZoneNumber) .. " | " .. zoneName) then
+            zonePath = v
+        end
+    end
+    LocalPlayer.Character.HumanoidRootPart.CFrame = zonePath:WaitForChild("PERSISTENT").Teleport.CFrame + Vector3.new(0, 10, 0)
+    task.wait()
+
+    if not zonePath:FindFirstChild("INTERACT") then
+        local loaded = false
+        local detectLoad = zonePath.ChildAdded:Connect(function(child)
+            if child.Name == "INTERACT" then
+                loaded = true
+            end
+        end)
+
+        repeat
+            task.wait()
+        until loaded or not getgenv().ScriptEnabled
+
+        detectLoad:Disconnect()
+    end
+
+    if not getgenv().ScriptEnabled then return end
+
+    local dist = 999
+    local closestBreakZone = nil
+    for _, v in pairs(zonePath.INTERACT.BREAK_ZONES:GetChildren()) do
+        local magnitude = (LocalPlayer.Character.HumanoidRootPart.Position - v.Position).Magnitude
+        if magnitude <= dist then
+            dist = magnitude
+            closestBreakZone = v
+        end
+    end
+
+    LocalPlayer.Character.HumanoidRootPart.CFrame = closestBreakZone.CFrame + Vector3.new(0, 10, 0)
+
+    if maxZoneData.ZoneNumber >= getgenv().autoWorldConfig.ZONE_TO_REACH then
+        print("Reached selected zone")
+        unfinished = false
+    end
+end
+
+for _, lootbag in pairs(Workspace.__THINGS:FindFirstChild("Lootbags"):GetChildren()) do
+    if getgenv().ScriptEnabled and lootbag then
+        ReplicatedStorage.Network:WaitForChild("Lootbags_Claim"):FireServer(unpack( { [1] = { [1] = lootbag.Name, }, } ))
+        lootbag:Destroy()
+        task.wait()
+    end
+end
+
+Workspace.__THINGS:FindFirstChild("Lootbags").ChildAdded:Connect(function(lootbag)
+    if not getgenv().ScriptEnabled then return end
+    task.wait()
+    if lootbag and getgenv().ScriptEnabled then
+        ReplicatedStorage.Network:WaitForChild("Lootbags_Claim"):FireServer(unpack( { [1] = { [1] = lootbag.Name, }, } ))
+        lootbag:Destroy()
+    end
+end)
+
+Workspace.__THINGS:FindFirstChild("Orbs").ChildAdded:Connect(function(orb)
+    if not getgenv().ScriptEnabled then return end
+    task.wait()
+    if orb and getgenv().ScriptEnabled then
+        ReplicatedStorage.Network:FindFirstChild("Orbs: Collect"):FireServer(unpack( { [1] = { [1] = tonumber(orb.Name), }, } ))
+        orb:Destroy()
+    end
+end)
+
+local nextRebirthData = require(game:GetService("ReplicatedStorage").Library.Client.RebirthCmds).GetNextRebirth()
+local rebirthNumber
+local rebirthZone
+
+if nextRebirthData then
+    rebirthNumber = nextRebirthData.RebirthNumber
+    rebirthZone = nextRebirthData.ZoneNumberRequired
+end
+
+task.spawn(function()
+    print("Starting zone purchase service")
+    while unfinished do
+        if not getgenv().ScriptEnabled then
+            task.wait(1)
+            continue
+        end
+        local nextZoneName, nextZoneData = require(game:GetService("ReplicatedStorage").Library.Client.ZoneCmds).GetNextZone()
+        local success, _ = game:GetService("ReplicatedStorage").Network.Zones_RequestPurchase:InvokeServer(nextZoneName)
+        if success then
+            print("Successfully purchased " .. nextZoneName)
+            if getgenv().autoWorldConfig.AUTO_REBIRTH then
+                pcall(function()
+                    if nextZoneData.ZoneNumber >= rebirthZone then
+                        print("Rebirthing")
+                        game:GetService("ReplicatedStorage").Network.Rebirth_Request:InvokeServer(tostring(rebirthNumber))
+                        task.wait(15)
+                        nextRebirthData = require(game:GetService("ReplicatedStorage").Library.Client.RebirthCmds).GetNextRebirth()
+                        if nextRebirthData then
+                            rebirthNumber = nextRebirthData.RebirthNumber
+                            rebirthZone = nextRebirthData.ZoneNumberRequired
+                        end
+                    end
+                end)
+            end
+            teleportToMaxZone()
+        end
+        task.wait(getgenv().autoWorldConfig.PURCHASE_CHECK_DELAY)
+    end
+end)
+
+teleportToMaxZone()
