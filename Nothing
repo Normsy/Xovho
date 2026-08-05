@@ -6,6 +6,13 @@ repeat
     task.wait()
 until game:IsLoaded()
 
+-- Default config safety fallback
+getgenv().autoWorldConfig = getgenv().autoWorldConfig or {
+    ZONE_TO_REACH = 999,
+    AUTO_REBIRTH = true,
+    PURCHASE_CHECK_DELAY = 1
+}
+
 local Workspace = game:GetService("Workspace")
 local Terrain = Workspace:WaitForChild("Terrain")
 Terrain.WaterReflectance = 0
@@ -230,27 +237,36 @@ task.spawn(function()
             task.wait(1)
             continue
         end
-        local nextZoneName, nextZoneData = require(game:GetService("ReplicatedStorage").Library.Client.ZoneCmds).GetNextZone()
-        local success, _ = game:GetService("ReplicatedStorage").Network.Zones_RequestPurchase:InvokeServer(nextZoneName)
-        if success then
-            print("Successfully purchased " .. nextZoneName)
-            if getgenv().autoWorldConfig.AUTO_REBIRTH then
-                pcall(function()
-                    if nextZoneData.ZoneNumber >= rebirthZone then
-                        print("Rebirthing")
-                        game:GetService("ReplicatedStorage").Network.Rebirth_Request:InvokeServer(tostring(rebirthNumber))
-                        task.wait(15)
-                        nextRebirthData = require(game:GetService("ReplicatedStorage").Library.Client.RebirthCmds).GetNextRebirth()
-                        if nextRebirthData then
-                            rebirthNumber = nextRebirthData.RebirthNumber
-                            rebirthZone = nextRebirthData.ZoneNumberRequired
+        
+        local successTrain, nextZoneName, nextZoneData = pcall(function()
+            return require(game:GetService("ReplicatedStorage").Library.Client.ZoneCmds).GetNextZone()
+        end)
+        
+        if successTrain and nextZoneName then
+            local success, err = pcall(function()
+                return game:GetService("ReplicatedStorage").Network.Zones_RequestPurchase:InvokeServer(nextZoneName)
+            end)
+            if success and err then
+                print("Successfully purchased " .. tostring(nextZoneName))
+                if getgenv().autoWorldConfig.AUTO_REBIRTH then
+                    pcall(function()
+                        if nextZoneData and nextZoneData.ZoneNumber >= rebirthZone then
+                            print("Rebirthing")
+                            game:GetService("ReplicatedStorage").Network.Rebirth_Request:InvokeServer(tostring(rebirthNumber))
+                            task.wait(15)
+                            nextRebirthData = require(game:GetService("ReplicatedStorage").Library.Client.RebirthCmds).GetNextRebirth()
+                            if nextRebirthData then
+                                rebirthNumber = nextRebirthData.RebirthNumber
+                                rebirthZone = nextRebirthData.ZoneNumberRequired
+                            end
                         end
-                    end
-                end)
+                    end)
+                end
+                teleportToMaxZone()
             end
-            teleportToMaxZone()
         end
-        task.wait(getgenv().autoWorldConfig.PURCHASE_CHECK_DELAY)
+        
+        task.wait(getgenv().autoWorldConfig.PURCHASE_CHECK_DELAY or 1)
     end
 end)
 
