@@ -132,11 +132,6 @@ end
 local function teleportToMaxZone()
     if not getgenv().ScriptEnabled then return end
     local zoneName, maxZoneData = require(ReplicatedStorage.Library.Client.ZoneCmds).GetMaxOwnedZone()
-    while currentZone == zoneName and getgenv().ScriptEnabled do
-        zoneName, maxZoneData = require(ReplicatedStorage.Library.Client.ZoneCmds).GetMaxOwnedZone()
-        task.wait()
-    end
-    if not getgenv().ScriptEnabled then return end
     currentZone = zoneName
     print("Teleporting to zone: " .. zoneName)
 
@@ -146,7 +141,12 @@ local function teleportToMaxZone()
             zonePath = v
         end
     end
-    LocalPlayer.Character.HumanoidRootPart.CFrame = zonePath:WaitForChild("PERSISTENT").Teleport.CFrame + Vector3.new(0, 10, 0)
+    if not zonePath then return end
+    
+    local persistent = zonePath:FindFirstChild("PERSISTENT")
+    if persistent and persistent:FindFirstChild("Teleport") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = persistent.Teleport.CFrame + Vector3.new(0, 10, 0)
+    end
     task.wait()
 
     if not zonePath:FindFirstChild("INTERACT") then
@@ -166,17 +166,21 @@ local function teleportToMaxZone()
 
     if not getgenv().ScriptEnabled then return end
 
-    local dist = 999
-    local closestBreakZone = nil
-    for _, v in pairs(zonePath.INTERACT.BREAK_ZONES:GetChildren()) do
-        local magnitude = (LocalPlayer.Character.HumanoidRootPart.Position - v.Position).Magnitude
-        if magnitude <= dist then
-            dist = magnitude
-            closestBreakZone = v
+    local interact = zonePath:FindFirstChild("INTERACT")
+    if interact and interact:FindFirstChild("BREAK_ZONES") then
+        local dist = 999
+        local closestBreakZone = nil
+        for _, v in pairs(interact.BREAK_ZONES:GetChildren()) do
+            local magnitude = (LocalPlayer.Character.HumanoidRootPart.Position - v.Position).Magnitude
+            if magnitude <= dist then
+                dist = magnitude
+                closestBreakZone = v
+            end
+        end
+        if closestBreakZone then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = closestBreakZone.CFrame + Vector3.new(0, 10, 0)
         end
     end
-
-    LocalPlayer.Character.HumanoidRootPart.CFrame = closestBreakZone.CFrame + Vector3.new(0, 10, 0)
 
     if maxZoneData.ZoneNumber >= getgenv().autoWorldConfig.ZONE_TO_REACH then
         print("Reached selected zone")
@@ -247,6 +251,18 @@ task.spawn(function()
             teleportToMaxZone()
         end
         task.wait(getgenv().autoWorldConfig.PURCHASE_CHECK_DELAY)
+    end
+end)
+
+-- Periodic Best Area Teleport Loop (Every 3 seconds when toggle is ON)
+task.spawn(function()
+    while true do
+        task.wait(3)
+        if getgenv().ScriptEnabled and unfinished then
+            pcall(function()
+                teleportToMaxZone()
+            end)
+        end
     end
 end)
 
