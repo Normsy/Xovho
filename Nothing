@@ -1,4 +1,4 @@
--- Delta Tower/Plant Auto-Farm Script (Authorized Users Only & Case-Insensitive Target Check)
+-- Delta Tower/Plant Auto-Farm Script (Authorized Users & Fallback Pet ID)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
@@ -60,7 +60,7 @@ StatusLabel.TextSize = 13
 StatusLabel.Font = Enum.Font.SourceSans
 StatusLabel.Parent = MainFrame
 
--- Function to find a player whose name starts with "capyclark", "togoshi", or "Togoshi" followed by numbers
+-- Function to find a player whose name starts with target prefixes followed by numbers
 local function findTargetPlayer()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
@@ -85,25 +85,53 @@ RejoinButton.MouseButton1Click:Connect(rejoinServer)
 
 -- Run Startup Sequence and Automated Loop
 task.spawn(function()
-    -- 1. Find and equip Capybara matching towerID "Capybara:dce9f01d" or Name "Capybara"
+    -- 1. Find and equip Capybara matching primary ID "Capybara:dce9f01d" or fallback ID "Capybara:891ff208"
     local capybaraTool = nil
+    local activeTowerID = "Capybara:dce9f01d"
+    
     while not capybaraTool do
         local backpack = LocalPlayer:FindFirstChild("Backpack")
         local char = LocalPlayer.Character
         
+        -- Check Backpack for primary ID first
         if backpack then
             for _, item in ipairs(backpack:GetChildren()) do
                 if item.Name == "Capybara" and item:GetAttribute("towerID") == "Capybara:dce9f01d" then
                     capybaraTool = item
+                    activeTowerID = "Capybara:dce9f01d"
                     break
                 end
             end
         end
         
+        -- Check Character for primary ID if not found in backpack
         if not capybaraTool and char then
             for _, item in ipairs(char:GetChildren()) do
                 if item:IsA("Tool") and item.Name == "Capybara" and item:GetAttribute("towerID") == "Capybara:dce9f01d" then
                     capybaraTool = item
+                    activeTowerID = "Capybara:dce9f01d"
+                    break
+                end
+            end
+        end
+        
+        -- If primary ID not found, check Backpack for fallback ID "Capybara:891ff208"
+        if not capybaraTool and backpack then
+            for _, item in ipairs(backpack:GetChildren()) do
+                if item.Name == "Capybara" and item:GetAttribute("towerID") == "Capybara:891ff208" then
+                    capybaraTool = item
+                    activeTowerID = "Capybara:891ff208"
+                    break
+                end
+            end
+        end
+        
+        -- Check Character for fallback ID if still not found
+        if not capybaraTool and char then
+            for _, item in ipairs(char:GetChildren()) do
+                if item:IsA("Tool") and item.Name == "Capybara" and item:GetAttribute("towerID") == "Capybara:891ff208" then
+                    capybaraTool = item
+                    activeTowerID = "Capybara:891ff208"
                     break
                 end
             end
@@ -130,11 +158,11 @@ task.spawn(function()
     StatusLabel.Text = "Waiting 1s..."
     task.wait(1)
     
-    -- 3. First remote call
+    -- 3. First remote call using the active ID
     StatusLabel.Text = "Executing initial setup..."
     pcall(function()
         local args = {
-            [1] = "Capybara:dce9f01d",
+            [1] = activeTowerID,
             [2] = true
         }
         game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("ChangeFavoriteStatus"):InvokeServer(unpack(args))
