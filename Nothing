@@ -16,7 +16,8 @@ if pet then
     game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 9e9):WaitForChild("ChangeFavoriteStatus", 9e9):InvokeServer(unpack(args))
 end
 
--- Delta Tower Auto-Farm GUI Script (Compact with Auto-Rejoin)
+
+-- Delta Tower Auto-Farm GUI Script (Compact with Private Server Safe Rejoin)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
@@ -95,6 +96,14 @@ StatusLabel.Parent = MainFrame
 local selectedPlayer = nil
 local isRunning = false
 
+-- Private Server Safe Rejoin Function
+local function rejoinServer()
+    StatusLabel.Text = "Rejoining server..."
+    pcall(function()
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    end)
+end
+
 -- Populate Player List
 local function updatePlayerList()
     for _, child in ipairs(ScrollingFrame:GetChildren()) do
@@ -151,12 +160,7 @@ StartButton.MouseButton1Click:Connect(function()
 end)
 
 -- Rejoin Button Action
-RejoinButton.MouseButton1Click:Connect(function()
-    StatusLabel.Text = "Rejoining server..."
-    pcall(function()
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-    end)
-end)
+RejoinButton.MouseButton1Click:Connect(rejoinServer)
 
 -- Main Loop with 1.5 Second Interval & Auto-Rejoin Check
 task.spawn(function()
@@ -190,13 +194,11 @@ task.spawn(function()
                 end
             end
 
-            -- If no tools found, automatically rejoin server
+            -- If no tools found, automatically rejoin private server
             if not foundTool then
                 StatusLabel.Text = "No tools left! Rejoining..."
                 task.wait(0.5)
-                pcall(function()
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-                end)
+                rejoinServer()
                 break
             end
 
@@ -238,3 +240,4 @@ task.spawn(function()
         end
     end
 end)
+
