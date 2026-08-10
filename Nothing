@@ -238,10 +238,10 @@ task.spawn(function()
             end
         end
 
-        -- If no tools found, wait 10 seconds then rejoin server
+        -- If no tools found, wait 3 seconds then rejoin server
         if not foundTool then
-            StatusLabel.Text = "No tools left! Rejoining in 10s..."
-            task.wait(10)
+            StatusLabel.Text = "No tools left! Rejoining in 3s..."
+            task.wait(3)
             rejoinServer()
             break
         end
