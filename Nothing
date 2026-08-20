@@ -811,7 +811,7 @@ local function createFeatureToggle(parent, titleText, defaultState, callback)
 end
 
 --------------------------------------------------------------------------------
--- Helper Loops & Utilities (Updated Auto Buy: 4 iterations, 3-minute cooldown)
+-- Helper Loops & Utilities (Updated Auto Buy: 4 iterations, 5-minute cooldown)
 --------------------------------------------------------------------------------
 local activeBuyLoops = {}
 local function startReliableBuyLoop(loopKey, getItemsFunc, buyRemoteFunc)
@@ -839,8 +839,8 @@ local function startReliableBuyLoop(loopKey, getItemsFunc, buyRemoteFunc)
                 task.wait(1)
             end
             
-            -- Wait 3 minutes before buying again (180 seconds)
-            local waitTime = 180
+            -- Wait 5 minutes before buying again (300 seconds)
+            local waitTime = 300
             while waitTime > 0 and activeBuyLoops[loopKey] do
                 task.wait(1)
                 waitTime = waitTime - 1
@@ -874,8 +874,8 @@ end
 --------------------------------------------------------------------------------
 createCategoryHeader(Pages.Main, "All In One")
 
-local setAutoScrapState, setAutoEventShopState, setAutoBossState, setAutoEggState, setAutoGearState, setAutoMerchantState
-local setAutoFuseState, setAutoClaimFuseState, setAutoPlaytimeState, setAutoDailyState, setAutoAntiAfkState, setAutoAntiLagState, setAutoCollectMoneyState
+local setAutoScrapState, setAutoEventShopState, setAutoBossState, setAutoEggState, setAutoGearState, setAutoMerchantState, setAutoCollectState
+local setAutoFuseState, setAutoClaimFuseState, setAutoPlaytimeState, setAutoDailyState, setAutoAntiAfkState, setAutoAntiLagState
 
 createFeatureToggle(Pages.Main, "Enable All Main Features", false, function(state)
     if setAutoScrapState then setAutoScrapState(state, true) end
@@ -884,13 +884,13 @@ createFeatureToggle(Pages.Main, "Enable All Main Features", false, function(stat
     if setAutoEggState then setAutoEggState(state, true) end
     if setAutoGearState then setAutoGearState(state, true) end
     if setAutoMerchantState then setAutoMerchantState(state, true) end
+    if setAutoCollectState then setAutoCollectState(state) end
     if setAutoFuseState then setAutoFuseState(state) end
     if setAutoClaimFuseState then setAutoClaimFuseState(state) end
     if setAutoPlaytimeState then setAutoPlaytimeState(state) end
     if setAutoDailyState then setAutoDailyState(state) end
     if setAutoAntiAfkState then setAutoAntiAfkState(state) end
     if setAutoAntiLagState then setAutoAntiLagState(state) end
-    if setAutoCollectMoneyState then setAutoCollectMoneyState(state) end
 end)
 
 createSectionSeparator(Pages.Main)
@@ -1071,21 +1071,30 @@ setAutoMerchantState = function(state, selectAll)
     if setMerchantFullState then setMerchantFullState(state, selectAll) end
 end
 
+--------------------------------------------------------------------------------
+-- AUTO COLLECT MONEY BLOCK (Inside Pages.Main)
+--------------------------------------------------------------------------------
 createSectionSeparator(Pages.Main)
-createCategoryHeader(Pages.Main, "Automation")
+createCategoryHeader(Pages.Main, "Money")
 
-local _, _, _, _, setCollectMoneyState = createFeatureToggle(Pages.Main, "Auto Collect Money", false, function(state)
-    _G.AutoCollectMoneyActive = state
-    task.spawn(function()
-        while _G.AutoCollectMoneyActive do
+local AutoCollectMoneyActive = false
+local _, _, _, _, setCollectState = createFeatureToggle(Pages.Main, "Auto Collect Money", false, function(state)
+    AutoCollectMoneyActive = state
+end)
+setAutoCollectState = setCollectState
+
+task.spawn(function()
+    while true do
+        if AutoCollectMoneyActive then
             pcall(function()
                 game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CollectionMachine"):FireServer()
             end)
             task.wait(30)
+        else
+            task.wait(1)
         end
-    end)
+    end
 end)
-setAutoCollectMoneyState = setCollectMoneyState
 
 --------------------------------------------------------------------------------
 -- TAB 2: CRAFTING
@@ -1739,26 +1748,20 @@ local _, _, _, _, setAntiLagState = createFeatureToggle(Pages.Settings, "Anti-La
             Lighting.GlobalShadows = false
             Lighting.FogEnd = 9e9
             
-            local function applySmoothPlastic(obj)
+            -- Change all models and parts in workspace to grey color
+            for _, obj in ipairs(Workspace:GetDescendants()) do
                 if obj:IsA("BasePart") then
                     obj.Color = Color3.fromRGB(128, 128, 128)
                     obj.Material = Enum.Material.SmoothPlastic
-                elseif obj:IsA("Model") then
-                    for _, part in ipairs(obj:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.Color = Color3.fromRGB(128, 128, 128)
-                            part.Material = Enum.Material.SmoothPlastic
-                        end
-                    end
                 end
             end
             
-            for _, obj in ipairs(Workspace:GetDescendants()) do
-                applySmoothPlastic(obj)
-            end
-            
+            -- Automatically color future parts/models spawned in workspace
             Workspace.DescendantAdded:Connect(function(obj)
-                applySmoothPlastic(obj)
+                if obj:IsA("BasePart") then
+                    obj.Color = Color3.fromRGB(128, 128, 128)
+                    obj.Material = Enum.Material.SmoothPlastic
+                end
             end)
         end)
     end
