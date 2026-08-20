@@ -839,8 +839,8 @@ local function startReliableBuyLoop(loopKey, getItemsFunc, buyRemoteFunc)
                 task.wait(1)
             end
             
-            -- Wait 5 minutes before buying again (300 seconds)
-            local waitTime = 300
+            -- Wait 2 minutes before buying again (150 seconds)
+            local waitTime = 150
             while waitTime > 0 and activeBuyLoops[loopKey] do
                 task.wait(1)
                 waitTime = waitTime - 1
@@ -875,6 +875,7 @@ end
 createCategoryHeader(Pages.Main, "All In One")
 
 local setAutoScrapState, setAutoEventShopState, setAutoBossState, setAutoEggState, setAutoGearState, setAutoMerchantState
+local setAutoCollectState
 local setAutoFuseState, setAutoClaimFuseState, setAutoPlaytimeState, setAutoDailyState, setAutoAntiAfkState, setAutoAntiLagState
 
 createFeatureToggle(Pages.Main, "Enable All Main Features", false, function(state)
@@ -884,6 +885,7 @@ createFeatureToggle(Pages.Main, "Enable All Main Features", false, function(stat
     if setAutoEggState then setAutoEggState(state, true) end
     if setAutoGearState then setAutoGearState(state, true) end
     if setAutoMerchantState then setAutoMerchantState(state, true) end
+    if setAutoCollectState then setAutoCollectState(state) end
     if setAutoFuseState then setAutoFuseState(state) end
     if setAutoClaimFuseState then setAutoClaimFuseState(state) end
     if setAutoPlaytimeState then setAutoPlaytimeState(state) end
@@ -1070,6 +1072,45 @@ setAutoMerchantState = function(state, selectAll)
     if setMerchantFullState then setMerchantFullState(state, selectAll) end
 end
 
+--------------------------------------------------------------------------------
+-- AUTO COLLECT MONEY
+--------------------------------------------------------------------------------
+
+createSectionSeparator(Pages.Main)
+createCategoryHeader(Pages.Main, "Money")
+
+local AutoCollectMoneyActive = false
+
+local _, _, _, _, setCollectState =
+    createFeatureToggle(
+        Pages.Main,
+        "Auto Collect Money",
+        false,
+        function(state)
+            AutoCollectMoneyActive = state
+        end
+    )
+
+setAutoCollectState = setCollectState
+
+task.spawn(function()
+    while true do
+        if AutoCollectMoneyActive then
+            pcall(function()
+                local CollectionMachine =
+                    ReplicatedStorage
+                    :WaitForChild("Remotes")
+                    :WaitForChild("CollectionMachine")
+
+                CollectionMachine:FireServer()
+            end)
+
+            task.wait(30)
+        else
+            task.wait(1)
+        end
+    end
+end)
 --------------------------------------------------------------------------------
 -- TAB 2: CRAFTING
 --------------------------------------------------------------------------------
