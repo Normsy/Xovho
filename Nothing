@@ -1,23 +1,23 @@
+-- Norms Hub - Centered & Compact Mobile Version + Enhanced Anti-Lag & Auto Fuse / Machine Features + Fixed Tabs, Scrolling & Misc Controls
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
-
-local LocalPlayer = Players.LocalPlayer
 
 if CoreGui:FindFirstChild("NormsHubUltimate") then
     CoreGui.NormsHubUltimate:Destroy()
 end
-
 if CoreGui:FindFirstChild("NormsHubIntro") then
     CoreGui.NormsHubIntro:Destroy()
 end
 
+--------------------------------------------------------------------------------
+-- Intro Loading Screen Animation (B&W Intro -> White Expand Transition -> UI)
+--------------------------------------------------------------------------------
 local IntroGui = Instance.new("ScreenGui")
 IntroGui.Name = "NormsHubIntro"
 IntroGui.Parent = CoreGui
@@ -86,6 +86,9 @@ WhiteTransition.BorderSizePixel = 0
 WhiteTransition.ZIndex = 10
 Instance.new("UICorner", WhiteTransition).CornerRadius = UDim.new(1, 0)
 
+--------------------------------------------------------------------------------
+-- Main UI Setup
+--------------------------------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NormsHubUltimate"
 ScreenGui.Parent = CoreGui
@@ -115,111 +118,55 @@ MainShadow.Parent = MainFrame
 
 task.spawn(function()
     local infoIn = TweenInfo.new(0.7, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-
-    TweenService:Create(
-        IntroCircle,
-        infoIn,
-        {Size = UDim2.new(0, 90, 0, 90)}
-    ):Play()
-
-    TweenService:Create(
-        IntroCircleStroke,
-        TweenInfo.new(0.5),
-        {Transparency = 0}
-    ):Play()
-
-    TweenService:Create(
-        IntroLabel,
-        TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
-        {
-            TextSize = 42,
-            TextTransparency = 0
-        }
-    ):Play()
-
+    TweenService:Create(IntroCircle, infoIn, {Size = UDim2.new(0, 90, 0, 90)}):Play()
+    TweenService:Create(IntroCircleStroke, TweenInfo.new(0.5), {Transparency = 0}):Play()
+    TweenService:Create(IntroLabel, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {TextSize = 42, TextTransparency = 0}):Play()
+    
     task.wait(0.2)
-
-    TweenService:Create(
-        SubText,
-        TweenInfo.new(0.4),
-        {TextTransparency = 0.2}
-    ):Play()
-
+    TweenService:Create(SubText, TweenInfo.new(0.4), {TextTransparency = 0.2}):Play()
+    
     task.wait(1.2)
-
-    local camera = Workspace.CurrentCamera
-    local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
-    local maxDiagonal = math.max(viewport.X, viewport.Y) * 2.5
-
-    local expandTween = TweenService:Create(
-        WhiteTransition,
-        TweenInfo.new(
-            0.5,
-            Enum.EasingStyle.Exponential,
-            Enum.EasingDirection.Out
-        ),
-        {
-            Size = UDim2.new(0, maxDiagonal, 0, maxDiagonal)
-        }
-    )
-
+    
+    local maxDiagonal = math.max(workspace.CurrentCamera.ViewportSize.X, workspace.CurrentCamera.ViewportSize.Y) * 2.5
+    local expandTween = TweenService:Create(WhiteTransition, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, maxDiagonal, 0, maxDiagonal)
+    })
     expandTween:Play()
-
+    
     expandTween.Completed:Connect(function()
-        if IntroBWEffect then
-            IntroBWEffect:Destroy()
-        end
-
-        if IntroGui then
-            IntroGui:Destroy()
-        end
-
+        IntroBWEffect:Destroy()
+        IntroGui:Destroy()
+        
         MainFrame.Visible = true
-
-        local fadeInfo = TweenInfo.new(
-            0.4,
-            Enum.EasingStyle.Sine,
-            Enum.EasingDirection.Out
-        )
-
-        TweenService:Create(
-            MainFrame,
-            fadeInfo,
-            {BackgroundTransparency = 0}
-        ):Play()
-
-        TweenService:Create(
-            MainShadow,
-            fadeInfo,
-            {Transparency = 0}
-        ):Play()
-
+        
+        local fadeInInfo = TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        TweenService:Create(MainFrame, fadeInInfo, {BackgroundTransparency = 0}):Play()
+        TweenService:Create(MainShadow, fadeInInfo, {Transparency = 0}):Play()
+        
         task.delay(0.4, function()
-            if WhiteTransition then
-                WhiteTransition:Destroy()
-            end
+            WhiteTransition:Destroy()
         end)
     end)
 end)
 
+--------------------------------------------------------------------------------
+-- Game Modules & Remotes References
+--------------------------------------------------------------------------------
+local Modules = ReplicatedStorage:WaitForChild("Modules", 5)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes", 5)
 
-local function findRemote(name)
-    return (Remotes and Remotes:FindFirstChild(name))
-        or ReplicatedStorage:FindFirstChild(name, true)
-end
+local FuseActionRemote = Remotes and Remotes:FindFirstChild("FuseAction") or ReplicatedStorage:FindFirstChild("FuseAction", true)
+local BuyMerchantItemRemote = Remotes and Remotes:FindFirstChild("BuyMerchantItem") or ReplicatedStorage:FindFirstChild("BuyMerchantItem", true)
+local RequestScrapRemote = Remotes and Remotes:FindFirstChild("RequestScrap") or ReplicatedStorage:FindFirstChild("RequestScrap", true)
+local BuyEventShopItemRemote = Remotes and Remotes:FindFirstChild("BuyEventShopItem") or ReplicatedStorage:FindFirstChild("BuyEventShopItem", true)
+local SummonBossEvent = Remotes and Remotes:FindFirstChild("SummonBoss") or ReplicatedStorage:FindFirstChild("SummonBoss", true)
+local ClaimPlaytimeRewardRemote = Remotes and Remotes:FindFirstChild("ClaimPlaytimeReward") or ReplicatedStorage:FindFirstChild("ClaimPlaytimeReward", true)
+local ClaimDailyRewardRemote = Remotes and Remotes:FindFirstChild("ClaimDailyReward") or ReplicatedStorage:FindFirstChild("ClaimDailyReward", true)
 
-local FuseActionRemote = findRemote("FuseAction")
-local BuyMerchantItemRemote = findRemote("BuyMerchantItem")
-local RequestScrapRemote = findRemote("RequestScrap")
-local BuyEventShopItemRemote = findRemote("BuyEventShopItem")
-local SummonBossEvent = findRemote("SummonBoss")
-local ClaimPlaytimeRewardRemote = findRemote("ClaimPlaytimeReward")
-local ClaimDailyRewardRemote = findRemote("ClaimDailyReward")
-local BuyItemRemote = findRemote("BuyItem")
-
+--------------------------------------------------------------------------------
+-- Theme Management Table & Registry
+--------------------------------------------------------------------------------
 local currentTheme = "Dark"
-
 local themeRegistry = {
     MainFrames = {},
     TopBars = {},
@@ -259,7 +206,6 @@ local themes = {
         OptText = Color3.fromRGB(170, 170, 170),
         SeparatorLine = Color3.fromRGB(30, 30, 30)
     },
-
     Light = {
         Main = Color3.fromRGB(245, 245, 247),
         TopBar = Color3.fromRGB(255, 255, 255),
@@ -285,94 +231,25 @@ local themes = {
 
 local function applyTheme(themeName)
     currentTheme = themeName
-
     local t = themes[themeName]
 
-    for _, obj in ipairs(themeRegistry.MainFrames) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.Main
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.TopBars) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.TopBar
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.TopBarFixes) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.TopBarFix
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.TopBarLines) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.TopBarLine
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.Sidebars) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.Sidebar
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.SidebarSeparators) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.SidebarSep
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.FeatureFrames) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.FeatureBg
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.TextLabels) do
-        if obj and obj.Parent then
-            obj.TextColor3 = t.TextMain
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.SecondaryTexts) do
-        if obj and obj.Parent then
-            obj.TextColor3 = t.TextHeader
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.DropFrames) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.DropBg
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.SelectBtns) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.SelectBtn
-            obj.TextColor3 = t.SelectText
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.OptBtns) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.OptBg
-            obj.TextColor3 = t.OptText
-        end
-    end
-
-    for _, obj in ipairs(themeRegistry.SubContainers) do
-        if obj and obj.Parent then
-            obj.BackgroundColor3 = t.SeparatorLine
-        end
-    end
+    for _, obj in ipairs(themeRegistry.MainFrames) do if obj and obj.Parent then obj.BackgroundColor3 = t.Main end end
+    for _, obj in ipairs(themeRegistry.TopBars) do if obj and obj.Parent then obj.BackgroundColor3 = t.TopBar end end
+    for _, obj in ipairs(themeRegistry.TopBarFixes) do if obj and obj.Parent then obj.BackgroundColor3 = t.TopBarFix end end
+    for _, obj in ipairs(themeRegistry.TopBarLines) do if obj and obj.Parent then obj.BackgroundColor3 = t.TopBarLine end end
+    for _, obj in ipairs(themeRegistry.Sidebars) do if obj and obj.Parent then obj.BackgroundColor3 = t.Sidebar end end
+    for _, obj in ipairs(themeRegistry.SidebarSeparators) do if obj and obj.Parent then obj.BackgroundColor3 = t.SidebarSep end end
+    for _, obj in ipairs(themeRegistry.FeatureFrames) do if obj and obj.Parent then obj.BackgroundColor3 = t.FeatureBg end end
+    for _, obj in ipairs(themeRegistry.TextLabels) do if obj and obj.Parent then obj.TextColor3 = t.TextMain end end
+    for _, obj in ipairs(themeRegistry.SecondaryTexts) do if obj and obj.Parent then obj.TextColor3 = t.TextHeader end end
+    for _, obj in ipairs(themeRegistry.DropFrames) do if obj and obj.Parent then obj.BackgroundColor3 = t.DropBg end end
+    for _, obj in ipairs(themeRegistry.SelectBtns) do if obj and obj.Parent then obj.BackgroundColor3 = t.SelectBtn; obj.TextColor3 = t.SelectText end end
+    for _, obj in ipairs(themeRegistry.OptBtns) do if obj and obj.Parent then obj.BackgroundColor3 = t.OptBg; obj.TextColor3 = t.OptText end end
+    for _, obj in ipairs(themeRegistry.SubContainers) do if obj and obj.Parent then obj.BackgroundColor3 = t.SeparatorLine end end
 
     for name, btn in pairs(themeRegistry.TabButtons) do
         if btn and btn.Parent then
-            local active = btn:GetAttribute("Active")
-
-            if active then
+            if btn.TextColor3.R > 0.5 then
                 btn.BackgroundColor3 = t.TabActive
                 btn.TextColor3 = t.TabTextActive
             else
@@ -385,6 +262,9 @@ end
 
 table.insert(themeRegistry.MainFrames, MainFrame)
 
+--------------------------------------------------------------------------------
+-- TopBar Setup
+--------------------------------------------------------------------------------
 local TopBar = Instance.new("Frame")
 TopBar.Parent = MainFrame
 TopBar.BackgroundColor3 = themes.Dark.TopBar
@@ -450,50 +330,34 @@ CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.TextSize = 8
-CloseBtn.AutoButtonColor = false
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
 
-local dragging = false
-local dragInput
-local dragStart
-local startPos
-
+local dragging, dragInput, dragStart, startPos
 TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
-
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
     end
 end)
-
 TopBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement
-        or input.UserInputType == Enum.UserInputType.Touch then
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         dragInput = input
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
-
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
+--------------------------------------------------------------------------------
+-- Floating Toggle Button
+--------------------------------------------------------------------------------
 local ToggleCircleBtn = Instance.new("TextButton")
 ToggleCircleBtn.Name = "ToggleCircleBtn"
 ToggleCircleBtn.Parent = ScreenGui
@@ -518,53 +382,30 @@ CloseBtn.MouseButton1Click:Connect(function()
     ToggleCircleBtn.Visible = true
 end)
 
-local circleDragging = false
-local circleDragInput
-local circleDragStart
-local circleStartPos
-local circleHasMoved = false
-
+local circleDragging, circleDragInput, circleDragStart, circleHasMoved = false, nil, nil, false
 ToggleCircleBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         circleDragging = true
         circleHasMoved = false
         circleDragStart = input.Position
         circleStartPos = ToggleCircleBtn.Position
-
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                circleDragging = false
-            end
+            if input.UserInputState == Enum.UserInputState.End then circleDragging = false end
         end)
     end
 end)
-
 ToggleCircleBtn.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement
-        or input.UserInputType == Enum.UserInputType.Touch then
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         circleDragInput = input
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if input == circleDragInput and circleDragging then
         local delta = input.Position - circleDragStart
-
-        if delta.Magnitude > 4 then
-            circleHasMoved = true
-        end
-
-        ToggleCircleBtn.Position = UDim2.new(
-            circleStartPos.X.Scale,
-            circleStartPos.X.Offset + delta.X,
-            circleStartPos.Y.Scale,
-            circleStartPos.Y.Offset + delta.Y
-        )
+        if delta.Magnitude > 4 then circleHasMoved = true end
+        ToggleCircleBtn.Position = UDim2.new(circleStartPos.X.Scale, circleStartPos.X.Offset + delta.X, circleStartPos.Y.Scale, circleStartPos.Y.Offset + delta.Y)
     end
 end)
-
 ToggleCircleBtn.MouseButton1Click:Connect(function()
     if not circleHasMoved then
         ToggleCircleBtn.Visible = false
@@ -572,6 +413,9 @@ ToggleCircleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+--------------------------------------------------------------------------------
+-- Sidebar & Navigation Tabs Setup (Main, Crafting, Gifting, Reward, Misc, Settings)
+--------------------------------------------------------------------------------
 local Sidebar = Instance.new("Frame")
 Sidebar.Parent = MainFrame
 Sidebar.BackgroundColor3 = themes.Dark.Sidebar
@@ -604,140 +448,99 @@ for name, page in pairs(Pages) do
     page.Size = UDim2.new(0, 260, 0, 206)
     page.CanvasSize = UDim2.new(0, 0, 0, 700)
     page.ScrollBarThickness = 2
-    page.Visible = name == "Main"
-
+    page.Visible = (name == "Main")
+    
     local layout = Instance.new("UIListLayout")
     layout.Parent = page
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Padding = UDim.new(0, 5)
-
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        page.CanvasSize = UDim2.new(
-            0,
-            0,
-            0,
-            math.max(700, layout.AbsoluteContentSize.Y + 10)
-        )
-    end)
 end
 
 local tabButtons = {}
-
 local function createTabButton(name, text, positionY)
     local btn = Instance.new("TextButton")
     btn.Parent = Sidebar
-    btn.BackgroundColor3 = name == "Main"
-        and themes.Dark.TabActive
-        or themes.Dark.TabInactive
-
+    btn.BackgroundColor3 = (name == "Main") and themes.Dark.TabActive or themes.Dark.TabInactive
     btn.Position = UDim2.new(0, 6, 0, positionY)
     btn.Size = UDim2.new(1, -12, 0, 22)
     btn.Font = Enum.Font.GothamBold
     btn.Text = text
-    btn.TextColor3 = name == "Main"
-        and themes.Dark.TabTextActive
-        or themes.Dark.TabTextInactive
-
+    btn.TextColor3 = (name == "Main") and themes.Dark.TabTextActive or themes.Dark.TabTextInactive
     btn.TextSize = 8
     btn.AutoButtonColor = false
-    btn:SetAttribute("Active", name == "Main")
-
+    
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-
+    
     btn.MouseButton1Click:Connect(function()
-        for tabName, page in pairs(Pages) do
-            page.Visible = tabName == name
-
-            local tab = tabButtons[tabName]
-
-            if tab then
-                tab:SetAttribute("Active", tabName == name)
-            end
+        for tName, pageObj in pairs(Pages) do
+            pageObj.Visible = (tName == name)
+            local t = themes[currentTheme]
+            tabButtons[tName].BackgroundColor3 = t.TabInactive
+            tabButtons[tName].TextColor3 = t.TabTextInactive
         end
-
         local t = themes[currentTheme]
-
-        for tabName, tab in pairs(tabButtons) do
-            local active = tab:GetAttribute("Active")
-
-            if active then
-                tab.BackgroundColor3 = t.TabActive
-                tab.TextColor3 = t.TabTextActive
-            else
-                tab.BackgroundColor3 = t.TabInactive
-                tab.TextColor3 = t.TabTextInactive
-            end
-        end
+        btn.BackgroundColor3 = t.TabActive
+        btn.TextColor3 = t.TabTextActive
     end)
-
+    
     tabButtons[name] = btn
     themeRegistry.TabButtons[name] = btn
 end
 
-local tabList = {
-    "Main",
-    "Crafting",
-    "Gifting",
-    "Reward",
-    "Misc",
-    "Settings"
+local tabList = {"Main", "Crafting", "Gifting", "Reward", "Misc", "Settings"}
+local tabNamesMap = {
+    Main = "Main",
+    Crafting = "Crafting",
+    Gifting = "Gifting",
+    Reward = "Reward",
+    Misc = "Misc",
+    Settings = "Settings"
 }
-
 local tabY = 6
-
-for _, name in ipairs(tabList) do
-    createTabButton(name, name, tabY)
-    tabY += 23
+for _, tName in ipairs(tabList) do
+    createTabButton(tName, tabNamesMap[tName], tabY)
+    tabY = tabY + 23
 end
 
+--------------------------------------------------------------------------------
+-- UI Builders (Fixed Scroller & Bounds Support)
+--------------------------------------------------------------------------------
 local function createCategoryHeader(parent, text)
-    local label = Instance.new("TextLabel")
-    label.Parent = parent
-    label.BackgroundTransparency = 1
-    label.Size = UDim2.new(1, -4, 0, 20)
-    label.Font = Enum.Font.GothamBold
-    label.Text = text
-    label.TextColor3 = themes.Dark.TextHeader
-    label.TextSize = 11
-    label.TextXAlignment = Enum.TextXAlignment.Left
-
-    table.insert(themeRegistry.SecondaryTexts, label)
-
-    return label
+    local HeaderLabel = Instance.new("TextLabel")
+    HeaderLabel.Parent = parent
+    HeaderLabel.BackgroundTransparency = 1
+    HeaderLabel.Size = UDim2.new(1, -4, 0, 20)
+    HeaderLabel.Font = Enum.Font.GothamBold
+    HeaderLabel.Text = text
+    HeaderLabel.TextColor3 = themes.Dark.TextHeader
+    HeaderLabel.TextSize = 11
+    HeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
+    table.insert(themeRegistry.SecondaryTexts, HeaderLabel)
+    return HeaderLabel
 end
 
 local function createSectionSeparator(parent)
-    local sep = Instance.new("Frame")
-    sep.Parent = parent
-    sep.BackgroundTransparency = 1
-    sep.Size = UDim2.new(1, -4, 0, 10)
-
-    local line = Instance.new("Frame")
-    line.Parent = sep
-    line.BackgroundColor3 = themes.Dark.SeparatorLine
-    line.Position = UDim2.new(0, 0, 0.5, 0)
-    line.Size = UDim2.new(1, -4, 0, 1)
-    line.BorderSizePixel = 0
-
-    table.insert(themeRegistry.SubContainers, line)
-
-    return sep
+    local Sep = Instance.new("Frame")
+    Sep.Parent = parent
+    Sep.BackgroundTransparency = 1
+    Sep.Size = UDim2.new(1, -4, 0, 10)
+    
+    local Line = Instance.new("Frame")
+    Line.Parent = Sep
+    Line.BackgroundColor3 = themes.Dark.SeparatorLine
+    Line.Position = UDim2.new(0, 0, 0.5, 0)
+    Line.Size = UDim2.new(1, -4, 0, 1)
+    Line.BorderSizePixel = 0
+    table.insert(themeRegistry.SubContainers, Line)
+    return Sep
 end
 
-local function createFeatureWithDropdown(
-    parent,
-    titleText,
-    defaultState,
-    itemsList,
-    selectedMap,
-    callback
-)
+local function createFeatureWithDropdown(parent, titleText, defaultState, itemsList, selectedMap, callback)
     local Frame = Instance.new("Frame")
     Frame.Parent = parent
     Frame.BackgroundColor3 = themes.Dark.FeatureBg
     Frame.Size = UDim2.new(1, -4, 0, 34)
     Frame.ClipsDescendants = true
-
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
     table.insert(themeRegistry.FeatureFrames, Frame)
 
@@ -751,42 +554,29 @@ local function createFeatureWithDropdown(
     TextLabel.TextColor3 = themes.Dark.TextMain
     TextLabel.TextSize = 10
     TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-
     table.insert(themeRegistry.TextLabels, TextLabel)
 
     local StatusDot = Instance.new("Frame")
     StatusDot.Parent = Frame
-    StatusDot.BackgroundColor3 = defaultState
-        and Color3.fromRGB(52, 199, 89)
-        or Color3.fromRGB(255, 69, 58)
-
+    StatusDot.BackgroundColor3 = defaultState and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(255, 69, 58)
     StatusDot.Position = UDim2.new(0, 8, 0, 14)
     StatusDot.Size = UDim2.new(0, 6, 0, 6)
-
     Instance.new("UICorner", StatusDot).CornerRadius = UDim.new(1, 0)
 
     local SwitchBtn = Instance.new("TextButton")
     SwitchBtn.Parent = Frame
-    SwitchBtn.BackgroundColor3 = defaultState
-        and Color3.fromRGB(52, 199, 89)
-        or Color3.fromRGB(35, 35, 35)
-
+    SwitchBtn.BackgroundColor3 = defaultState and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(35, 35, 35)
     SwitchBtn.Position = UDim2.new(1, -42, 0, 8)
     SwitchBtn.Size = UDim2.new(0, 34, 0, 18)
     SwitchBtn.AutoButtonColor = false
     SwitchBtn.Text = ""
-
     Instance.new("UICorner", SwitchBtn).CornerRadius = UDim.new(1, 0)
 
     local Circle = Instance.new("Frame")
     Circle.Parent = SwitchBtn
     Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Circle.Position = defaultState
-        and UDim2.new(1, -16, 0.5, -7)
-        or UDim2.new(0, 2, 0.5, -7)
-
+    Circle.Position = defaultState and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
     Circle.Size = UDim2.new(0, 14, 0, 14)
-
     Instance.new("UICorner", Circle).CornerRadius = UDim.new(1, 0)
 
     local DropTriggerBtn = Instance.new("TextButton")
@@ -799,9 +589,7 @@ local function createFeatureWithDropdown(
     DropTriggerBtn.TextColor3 = themes.Dark.SelectText
     DropTriggerBtn.TextSize = 8
     DropTriggerBtn.AutoButtonColor = false
-
     Instance.new("UICorner", DropTriggerBtn).CornerRadius = UDim.new(0, 4)
-
     table.insert(themeRegistry.SelectBtns, DropTriggerBtn)
 
     local ListContainer = Instance.new("ScrollingFrame")
@@ -820,17 +608,12 @@ local function createFeatureWithDropdown(
     local function updateButtonText()
         local count = 0
         local firstName = ""
-
         for _, itemName in ipairs(itemsList) do
             if selectedMap[itemName] then
-                count += 1
-
-                if firstName == "" then
-                    firstName = itemName
-                end
+                count = count + 1
+                if firstName == "" then firstName = itemName end
             end
         end
-
         if count == 0 then
             DropTriggerBtn.Text = "Select ▼"
         elseif count == #itemsList then
@@ -839,27 +622,6 @@ local function createFeatureWithDropdown(
             DropTriggerBtn.Text = firstName .. " ▼"
         else
             DropTriggerBtn.Text = "Selected (" .. count .. ") ▼"
-        end
-    end
-
-    local function updateAllButtonState()
-        local allSelected = #itemsList > 0
-
-        for _, itemName in ipairs(itemsList) do
-            if not selectedMap[itemName] then
-                allSelected = false
-                break
-            end
-        end
-
-        if allSelected then
-            AllBtn.BackgroundColor3 = Color3.fromRGB(70, 45, 90)
-            AllBtn.Text = "[X] All"
-            AllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        else
-            AllBtn.BackgroundColor3 = themes.Dark.OptBg
-            AllBtn.Text = "[  ] All"
-            AllBtn.TextColor3 = themes.Dark.OptText
         end
     end
 
@@ -875,44 +637,53 @@ local function createFeatureWithDropdown(
                 btn.TextColor3 = themes.Dark.OptText
             end
         end
-
         updateButtonText()
-        updateAllButtonState()
     end
 
-    AllBtn = Instance.new("TextButton")
+    local AllBtn = Instance.new("TextButton")
     AllBtn.Parent = ListContainer
     AllBtn.Position = UDim2.new(0, 6, 0, 0)
     AllBtn.Size = UDim2.new(1, -12, 0, 22)
     AllBtn.Font = Enum.Font.GothamBold
     AllBtn.TextSize = 9
     AllBtn.AutoButtonColor = false
-
     Instance.new("UICorner", AllBtn).CornerRadius = UDim.new(0, 4)
-
     table.insert(themeRegistry.OptBtns, AllBtn)
 
-    AllBtn.MouseButton1Click:Connect(function()
-        local allSelected = #itemsList > 0
-
+    local function updateAllButtonState()
+        local allSelected = true
         for _, itemName in ipairs(itemsList) do
             if not selectedMap[itemName] then
                 allSelected = false
                 break
             end
         end
-
-        if allSelected then
-            for _, itemName in ipairs(itemsList) do
-                selectedMap[itemName] = nil
-            end
+        if allSelected and #itemsList > 0 then
+            AllBtn.BackgroundColor3 = Color3.fromRGB(70, 45, 90)
+            AllBtn.Text = "[X] All"
+            AllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         else
-            for _, itemName in ipairs(itemsList) do
-                selectedMap[itemName] = true
+            AllBtn.BackgroundColor3 = themes.Dark.OptBg
+            AllBtn.Text = "[  ] All"
+            AllBtn.TextColor3 = themes.Dark.OptText
+        end
+    end
+
+    AllBtn.MouseButton1Click:Connect(function()
+        local allSelected = true
+        for _, itemName in ipairs(itemsList) do
+            if not selectedMap[itemName] then
+                allSelected = false
+                break
             end
         end
-
+        if allSelected then
+            for _, itemName in ipairs(itemsList) do selectedMap[itemName] = nil end
+        else
+            for _, itemName in ipairs(itemsList) do selectedMap[itemName] = true end
+        end
         refreshOptionUI()
+        updateAllButtonState()
     end)
 
     for i, itemName in ipairs(itemsList) do
@@ -923,83 +694,47 @@ local function createFeatureWithDropdown(
         OptBtn.Font = Enum.Font.Gotham
         OptBtn.TextSize = 9
         OptBtn.AutoButtonColor = false
-
         Instance.new("UICorner", OptBtn).CornerRadius = UDim.new(0, 4)
-
         table.insert(themeRegistry.OptBtns, OptBtn)
-        optionButtons[itemName] = OptBtn
 
+        optionButtons[itemName] = OptBtn
         OptBtn.MouseButton1Click:Connect(function()
             if selectedMap[itemName] then
                 selectedMap[itemName] = nil
             else
                 selectedMap[itemName] = true
             end
-
             refreshOptionUI()
+            updateAllButtonState()
         end)
     end
 
     DropTriggerBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
-
-        local targetHeight = isOpen
-            and math.clamp(36 + ((#itemsList + 1) * 24), 36, 135)
-            or 34
-
-        TweenService:Create(
-            Frame,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {
-                Size = UDim2.new(1, -4, 0, targetHeight)
-            }
-        ):Play()
+        local targetHeight = isOpen and math.clamp(36 + ((#itemsList + 1) * 24), 36, 135) or 34
+        TweenService:Create(Frame, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Size = UDim2.new(1, -4, 0, targetHeight)}):Play()
     end)
 
     local function setFeatureState(state, selectAllIfTrue)
         activeState = state
-
         if selectAllIfTrue and state then
             for _, itemName in ipairs(itemsList) do
                 selectedMap[itemName] = true
             end
         end
-
         refreshOptionUI()
+        updateAllButtonState()
 
-        local color = activeState
-            and Color3.fromRGB(52, 199, 89)
-            or Color3.fromRGB(35, 35, 35)
-
-        local dotColor = activeState
-            and Color3.fromRGB(52, 199, 89)
-            or Color3.fromRGB(255, 69, 58)
-
-        local circlePosition = activeState
-            and UDim2.new(1, -16, 0.5, -7)
-            or UDim2.new(0, 2, 0.5, -7)
-
-        TweenService:Create(
-            SwitchBtn,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {BackgroundColor3 = color}
-        ):Play()
-
-        TweenService:Create(
-            Circle,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {Position = circlePosition}
-        ):Play()
-
-        TweenService:Create(
-            StatusDot,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {BackgroundColor3 = dotColor}
-        ):Play()
-
-        if callback then
-            callback(activeState)
+        if activeState then
+            TweenService:Create(SwitchBtn, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(52, 199, 89)}):Play()
+            TweenService:Create(Circle, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Position = UDim2.new(1, -16, 0.5, -7)}):Play()
+            TweenService:Create(StatusDot, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(52, 199, 89)}):Play()
+        else
+            TweenService:Create(SwitchBtn, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
+            TweenService:Create(Circle, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Position = UDim2.new(0, 2, 0.5, -7)}):Play()
+            TweenService:Create(StatusDot, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(255, 69, 58)}):Play()
         end
+        if callback then callback(activeState) end
     end
 
     SwitchBtn.MouseButton1Click:Connect(function()
@@ -1007,7 +742,7 @@ local function createFeatureWithDropdown(
     end)
 
     refreshOptionUI()
-
+    updateAllButtonState()
     return Frame, SwitchBtn, Circle, StatusDot, setFeatureState
 end
 
@@ -1016,7 +751,6 @@ local function createFeatureToggle(parent, titleText, defaultState, callback)
     Frame.Parent = parent
     Frame.BackgroundColor3 = themes.Dark.FeatureBg
     Frame.Size = UDim2.new(1, -4, 0, 34)
-
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
     table.insert(themeRegistry.FeatureFrames, Frame)
 
@@ -1030,146 +764,86 @@ local function createFeatureToggle(parent, titleText, defaultState, callback)
     TextLabel.TextColor3 = themes.Dark.TextMain
     TextLabel.TextSize = 10
     TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-
     table.insert(themeRegistry.TextLabels, TextLabel)
 
     local StatusDot = Instance.new("Frame")
     StatusDot.Parent = Frame
-    StatusDot.BackgroundColor3 = defaultState
-        and Color3.fromRGB(52, 199, 89)
-        or Color3.fromRGB(255, 69, 58)
-
+    StatusDot.BackgroundColor3 = defaultState and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(255, 69, 58)
     StatusDot.Position = UDim2.new(0, 8, 0.5, -3)
     StatusDot.Size = UDim2.new(0, 6, 0, 6)
-
     Instance.new("UICorner", StatusDot).CornerRadius = UDim.new(1, 0)
 
     local SwitchBtn = Instance.new("TextButton")
     SwitchBtn.Parent = Frame
-    SwitchBtn.BackgroundColor3 = defaultState
-        and Color3.fromRGB(52, 199, 89)
-        or Color3.fromRGB(35, 35, 35)
-
+    SwitchBtn.BackgroundColor3 = defaultState and Color3.fromRGB(52, 199, 89) or Color3.fromRGB(35, 35, 35)
     SwitchBtn.Position = UDim2.new(1, -42, 0.5, -9)
     SwitchBtn.Size = UDim2.new(0, 34, 0, 18)
     SwitchBtn.AutoButtonColor = false
     SwitchBtn.Text = ""
-
     Instance.new("UICorner", SwitchBtn).CornerRadius = UDim.new(1, 0)
 
     local Circle = Instance.new("Frame")
     Circle.Parent = SwitchBtn
     Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Circle.Position = defaultState
-        and UDim2.new(1, -16, 0.5, -7)
-        or UDim2.new(0, 2, 0.5, -7)
-
+    Circle.Position = defaultState and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
     Circle.Size = UDim2.new(0, 14, 0, 14)
-
     Instance.new("UICorner", Circle).CornerRadius = UDim.new(1, 0)
 
     local activeState = defaultState
-
     local function setFeatureState(state)
         activeState = state
-
-        local switchColor = activeState
-            and Color3.fromRGB(52, 199, 89)
-            or Color3.fromRGB(35, 35, 35)
-
-        local dotColor = activeState
-            and Color3.fromRGB(52, 199, 89)
-            or Color3.fromRGB(255, 69, 58)
-
-        local circlePosition = activeState
-            and UDim2.new(1, -16, 0.5, -7)
-            or UDim2.new(0, 2, 0.5, -7)
-
-        TweenService:Create(
-            SwitchBtn,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {BackgroundColor3 = switchColor}
-        ):Play()
-
-        TweenService:Create(
-            Circle,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {Position = circlePosition}
-        ):Play()
-
-        TweenService:Create(
-            StatusDot,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {BackgroundColor3 = dotColor}
-        ):Play()
-
-        if callback then
-            callback(activeState)
+        if activeState then
+            TweenService:Create(SwitchBtn, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(52, 199, 89)}):Play()
+            TweenService:Create(Circle, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Position = UDim2.new(1, -16, 0.5, -7)}):Play()
+            TweenService:Create(StatusDot, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(52, 199, 89)}):Play()
+        else
+            TweenService:Create(SwitchBtn, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
+            TweenService:Create(Circle, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Position = UDim2.new(0, 2, 0.5, -7)}):Play()
+            TweenService:Create(StatusDot, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(255, 69, 58)}):Play()
         end
+        if callback then callback(activeState) end
     end
 
     SwitchBtn.MouseButton1Click:Connect(function()
         setFeatureState(not activeState)
     end)
-
     return Frame, SwitchBtn, Circle, StatusDot, setFeatureState
 end
 
+--------------------------------------------------------------------------------
+-- Helper Loops & Utilities (Updated Auto Buy: 4 iterations, 5-minute cooldown)
+--------------------------------------------------------------------------------
 local activeBuyLoops = {}
-
 local function startReliableBuyLoop(loopKey, getItemsFunc, buyRemoteFunc)
-    if activeBuyLoops[loopKey] then
-        return
-    end
-
+    if activeBuyLoops[loopKey] then return end
     activeBuyLoops[loopKey] = true
-
     task.spawn(function()
         while activeBuyLoops[loopKey] do
-            for _ = 1, 4 do
-                if not activeBuyLoops[loopKey] then
-                    break
-                end
-
+            -- Loop 4 times
+            for i = 1, 4 do
+                if not activeBuyLoops[loopKey] then break end
                 local success, items = pcall(getItemsFunc)
-
                 if success and items then
                     for _, item in ipairs(items) do
-                        if not activeBuyLoops[loopKey] then
-                            break
-                        end
-
+                        if not activeBuyLoops[loopKey] then break end
                         local bought = false
-
                         for _ = 1, 3 do
-                            if not activeBuyLoops[loopKey] then
-                                break
-                            end
-
-                            local buySuccess = pcall(function()
-                                buyRemoteFunc(item)
-                            end)
-
-                            if buySuccess then
-                                bought = true
-                                break
-                            end
-
+                            if not activeBuyLoops[loopKey] then break end
+                            local buySuccess = pcall(function() buyRemoteFunc(item) end)
+                            if buySuccess then bought = true; break end
                             task.wait(0.1)
                         end
-
                         task.wait(bought and 0.15 or 0.3)
                     end
                 end
-
                 task.wait(1)
             end
-
+            
+            -- Wait 5 minutes before buying again (300 seconds)
             local waitTime = 300
-
             while waitTime > 0 and activeBuyLoops[loopKey] do
                 task.wait(1)
-                waitTime -= 1
+                waitTime = waitTime - 1
             end
         end
     end)
@@ -1183,93 +857,40 @@ local function equipSpecificScrapTool(toolName)
     local character = LocalPlayer.Character
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
     local backpack = LocalPlayer:FindFirstChild("Backpack")
-
-    if not backpack or not humanoid then
-        return false
-    end
-
+    if not backpack or not humanoid then return false end
     for _, item in ipairs(backpack:GetChildren()) do
-        if item:IsA("Tool")
-            and not item.Name:lower():find("egg")
-            and item.Name:find(toolName) then
-
-            humanoid:EquipTool(item)
-            return true
+        if item:IsA("Tool") and not item.Name:lower():find("egg") then
+            if item.Name:find(toolName) then
+                humanoid:EquipTool(item)
+                return true
+            end
         end
     end
-
     return false
 end
 
-local setAutoScrapState
-local setAutoEventShopState
-local setAutoBossState
-local setAutoEggState
-local setAutoGearState
-local setAutoMerchantState
-local setAutoFuseState
-local setAutoClaimFuseState
-local setAutoPlaytimeState
-local setAutoDailyState
-local setAutoAntiAfkState
-local setAutoAntiLagState
-
+--------------------------------------------------------------------------------
+-- TAB 1: MAIN
+--------------------------------------------------------------------------------
 createCategoryHeader(Pages.Main, "All In One")
 
-createFeatureToggle(
-    Pages.Main,
-    "Enable All Main Features",
-    false,
-    function(state)
-        if setAutoScrapState then
-            setAutoScrapState(state, true)
-        end
+local setAutoScrapState, setAutoEventShopState, setAutoBossState, setAutoEggState, setAutoGearState, setAutoMerchantState
+local setAutoFuseState, setAutoClaimFuseState, setAutoPlaytimeState, setAutoDailyState, setAutoAntiAfkState, setAutoAntiLagState
 
-        if setAutoEventShopState then
-            setAutoEventShopState(state, true)
-        end
-
-        if setAutoBossState then
-            setAutoBossState(state)
-        end
-
-        if setAutoEggState then
-            setAutoEggState(state, true)
-        end
-
-        if setAutoGearState then
-            setAutoGearState(state, true)
-        end
-
-        if setAutoMerchantState then
-            setAutoMerchantState(state, true)
-        end
-
-        if setAutoFuseState then
-            setAutoFuseState(state)
-        end
-
-        if setAutoClaimFuseState then
-            setAutoClaimFuseState(state)
-        end
-
-        if setAutoPlaytimeState then
-            setAutoPlaytimeState(state)
-        end
-
-        if setAutoDailyState then
-            setAutoDailyState(state)
-        end
-
-        if setAutoAntiAfkState then
-            setAutoAntiAfkState(state)
-        end
-
-        if setAutoAntiLagState then
-            setAutoAntiLagState(state)
-        end
-    end
-)
+createFeatureToggle(Pages.Main, "Enable All Main Features", false, function(state)
+    if setAutoScrapState then setAutoScrapState(state, true) end
+    if setAutoEventShopState then setAutoEventShopState(state, true) end
+    if setAutoBossState then setAutoBossState(state) end
+    if setAutoEggState then setAutoEggState(state, true) end
+    if setAutoGearState then setAutoGearState(state, true) end
+    if setAutoMerchantState then setAutoMerchantState(state, true) end
+    if setAutoFuseState then setAutoFuseState(state) end
+    if setAutoClaimFuseState then setAutoClaimFuseState(state) end
+    if setAutoPlaytimeState then setAutoPlaytimeState(state) end
+    if setAutoDailyState then setAutoDailyState(state) end
+    if setAutoAntiAfkState then setAutoAntiAfkState(state) end
+    if setAutoAntiLagState then setAutoAntiLagState(state) end
+end)
 
 createSectionSeparator(Pages.Main)
 createCategoryHeader(Pages.Main, "Event")
@@ -1277,65 +898,32 @@ createCategoryHeader(Pages.Main, "Event")
 local AutoScrapActive = false
 local AutoScrapInterval = 1.5
 local selectedScrapItemsMap = {}
+local scrapItemList = {"Mechamelon", "Carbot", "Circuit Pepper", "Dr Carbot MkII", "Dr Carbot MkIII", "Robot Capybara"}
 
-local scrapItemList = {
-    "Mechamelon",
-    "Carbot",
-    "Circuit Pepper",
-    "Dr Carbot MkII",
-    "Dr Carbot MkIII",
-    "Robot Capybara"
-}
-
-local _, _, _, _, setScrapFullState =
-    createFeatureWithDropdown(
-        Pages.Main,
-        "Auto Scrap",
-        false,
-        scrapItemList,
-        selectedScrapItemsMap,
-        function(state)
-            AutoScrapActive = state
-        end
-    )
+local _, scrapSwitch, scrapCircle, scrapDot, setScrapFullState = createFeatureWithDropdown(Pages.Main, "Auto Scrap", false, scrapItemList, selectedScrapItemsMap, function(state)
+    AutoScrapActive = state
+end)
 
 setAutoScrapState = function(state, selectAll)
-    if setScrapFullState then
-        setScrapFullState(state, selectAll)
-    end
+    if setScrapFullState then setScrapFullState(state, selectAll) end
 end
 
 local function checkAndTagBossPlants()
     pcall(function()
         local backpack = LocalPlayer:FindFirstChild("Backpack")
-        local character = LocalPlayer.Character
-
+        local char = LocalPlayer.Character
         local function tagItem(item)
-            if not item or item.Name:lower():find("egg") then
-                return
-            end
-
-            for itemName in pairs(selectedScrapItemsMap) do
-                if item.Name:find(itemName) then
-                    item:SetAttribute("isPlant", true)
-                    break
+            if item and not item.Name:lower():find("egg") then
+                for itemName, _ in pairs(selectedScrapItemsMap) do
+                    if item.Name:find(itemName) then
+                        item:SetAttribute("isPlant", true)
+                        break
+                    end
                 end
             end
         end
-
-        if backpack then
-            for _, item in ipairs(backpack:GetChildren()) do
-                tagItem(item)
-            end
-        end
-
-        if character then
-            for _, item in ipairs(character:GetChildren()) do
-                if item:IsA("Tool") then
-                    tagItem(item)
-                end
-            end
-        end
+        if backpack then for _, item in ipairs(backpack:GetChildren()) do tagItem(item) end end
+        if char then for _, item in ipairs(char:GetChildren()) do if item:IsA("Tool") then tagItem(item) end end end
     end)
 end
 
@@ -1344,20 +932,13 @@ task.spawn(function()
         if AutoScrapActive then
             pcall(function()
                 checkAndTagBossPlants()
-
-                for itemName in pairs(selectedScrapItemsMap) do
-                    if AutoScrapActive then
-                        equipSpecificScrapTool(itemName)
-                    end
+                for itemName, _ in pairs(selectedScrapItemsMap) do
+                    if AutoScrapActive then equipSpecificScrapTool(itemName) end
                 end
-
                 if RequestScrapRemote then
-                    RequestScrapRemote:InvokeServer({
-                        Request = "Scrap"
-                    })
+                    RequestScrapRemote:InvokeServer({["Request"] = "Scrap"})
                 end
             end)
-
             task.wait(AutoScrapInterval)
         else
             task.wait(0.3)
@@ -1365,103 +946,48 @@ task.spawn(function()
     end
 end)
 
-local eventShopItemList = {
-    "Robot Seed Pack",
-    "Robot Capybara MkII Egg",
-    "Mega Scroll"
-}
-
+local eventShopItemList = {"Robot Seed Pack", "Robot Capybara MkII Egg", "Mega Scroll"}
 local selectedEventShopMap = {}
 
-local _, _, _, _, setEventFullState =
-    createFeatureWithDropdown(
-        Pages.Main,
-        "Auto Buy Event",
-        false,
-        eventShopItemList,
-        selectedEventShopMap,
-        function(state)
-            if state then
-                startReliableBuyLoop(
-                    "AutoBuySelectedEvent",
-                    function()
-                        local list = {}
-
-                        for itemName, active in pairs(selectedEventShopMap) do
-                            if active then
-                                table.insert(list, itemName)
-                            end
-                        end
-
-                        return list
-                    end,
-                    function(itemName)
-                        if BuyEventShopItemRemote then
-                            BuyEventShopItemRemote:FireServer(
-                                itemName,
-                                "DrCarrot"
-                            )
-                        end
-                    end
-                )
-            else
-                stopReliableBuyLoop("AutoBuySelectedEvent")
-            end
-        end
-    )
+local _, eventSwitch, eventCircle, eventDot, setEventFullState = createFeatureWithDropdown(Pages.Main, "Auto Buy Event", false, eventShopItemList, selectedEventShopMap, function(state)
+    if state then
+        startReliableBuyLoop("AutoBuySelectedEvent", function()
+            local list = {}
+            for itemName, active in pairs(selectedEventShopMap) do if active then table.insert(list, itemName) end end
+            return list
+        end, function(itemName)
+            if BuyEventShopItemRemote then BuyEventShopItemRemote:FireServer(itemName, "DrCarrot") end
+        end)
+    else
+        stopReliableBuyLoop("AutoBuySelectedEvent")
+    end
+end)
 
 setAutoEventShopState = function(state, selectAll)
-    if setEventFullState then
-        setEventFullState(state, selectAll)
-    end
+    if setEventFullState then setEventFullState(state, selectAll) end
 end
 
-local mk2Active = false
-local mk3Active = false
-local mk2Time = 0
-local mk3Time = 0
+local mk2Active, mk3Active = false, false
+local mk2Time, mk3Time = 0, 0
 
-local _, _, _, _, setBossFullState =
-    createFeatureToggle(
-        Pages.Main,
-        "Auto Event Boss",
-        false,
-        function(state)
-            mk2Active = state
-            mk3Active = state
-
-            if state then
-                mk2Time = 0
-                mk3Time = 0
-            end
-        end
-    )
+local _, bossSwitch, bossCircle, bossDot, setBossFullState = createFeatureToggle(Pages.Main, "Auto Event Boss", false, function(state)
+    mk2Active, mk3Active = state, state
+    if state then mk2Time, mk3Time = 0, 0 end
+end)
 
 setAutoBossState = function(state)
-    if setBossFullState then
-        setBossFullState(state)
-    end
+    if setBossFullState then setBossFullState(state) end
 end
 
 task.spawn(function()
     while true do
         if mk2Active then
             if mk2Time <= 0 then
-                pcall(function()
-                    if SummonBossEvent then
-                        SummonBossEvent:InvokeServer(
-                            "Summon",
-                            "Dr Carbot MkII"
-                        )
-                    end
-                end)
-
+                pcall(function() if SummonBossEvent then SummonBossEvent:InvokeServer("Summon", "Dr Carbot MkII") end end)
                 mk2Time = 20 * 60
             end
-
-            mk2Time -= 1
+            mk2Time = mk2Time - 1
         end
-
         task.wait(1)
     end
 end)
@@ -1470,21 +996,11 @@ task.spawn(function()
     while true do
         if mk3Active then
             if mk3Time <= 0 then
-                pcall(function()
-                    if SummonBossEvent then
-                        SummonBossEvent:InvokeServer(
-                            "Summon",
-                            "Dr Carbot MkIII"
-                        )
-                    end
-                end)
-
+                pcall(function() if SummonBossEvent then SummonBossEvent:InvokeServer("Summon", "Dr Carbot MkIII") end end)
                 mk3Time = 70 * 60
             end
-
-            mk3Time -= 1
+            mk3Time = mk3Time - 1
         end
-
         task.wait(1)
     end
 end)
@@ -1492,187 +1008,80 @@ end)
 createSectionSeparator(Pages.Main)
 createCategoryHeader(Pages.Main, "Auto Shops")
 
-local allEggs = {
-    "Capybara Egg",
-    "Alpha Capybara Egg",
-    "Archer Capybara Egg",
-    "Magic Capybara Egg",
-    "Ghost Capybara Egg",
-    "Golem Capybara Egg",
-    "Robot Capybara Egg",
-    "Disco Capybara Egg",
-    "Angel Capybara Egg"
-}
-
+local allEggs = {"Capybara Egg", "Alpha Capybara Egg", "Archer Capybara Egg", "Magic Capybara Egg", "Ghost Capybara Egg", "Golem Capybara Egg", "Robot Capybara Egg", "Disco Capybara Egg", "Angel Capybara Egg"}
 local selectedEggsMap = {}
-
-local _, _, _, _, setEggFullState =
-    createFeatureWithDropdown(
-        Pages.Main,
-        "Auto Buy Egg",
-        false,
-        allEggs,
-        selectedEggsMap,
-        function(state)
-            if state then
-                startReliableBuyLoop(
-                    "AutoBuySelectedEgg",
-                    function()
-                        local list = {}
-
-                        for itemName, active in pairs(selectedEggsMap) do
-                            if active then
-                                table.insert(list, itemName)
-                            end
-                        end
-
-                        return list
-                    end,
-                    function(item)
-                        if BuyItemRemote then
-                            BuyItemRemote:FireServer(item)
-                        end
-                    end
-                )
-            else
-                stopReliableBuyLoop("AutoBuySelectedEgg")
-            end
-        end
-    )
+local _, eggSwitch, eggCircle, eggDot, setEggFullState = createFeatureWithDropdown(Pages.Main, "Auto Buy Egg", false, allEggs, selectedEggsMap, function(state)
+    if state then
+        startReliableBuyLoop("AutoBuySelectedEgg", function()
+            local list = {}
+            for k, v in pairs(selectedEggsMap) do if v then table.insert(list, k) end end
+            return list
+        end, function(item)
+            local buyEvent = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("BuyItem")
+            if buyEvent then buyEvent:FireServer(item) end
+        end)
+    else
+        stopReliableBuyLoop("AutoBuySelectedEgg")
+    end
+end)
 
 setAutoEggState = function(state, selectAll)
-    if setEggFullState then
-        setEggFullState(state, selectAll)
-    end
+    if setEggFullState then setEggFullState(state, selectAll) end
 end
 
-local allGears = {
-    "Hatch Hammer",
-    "Nametag",
-    "Mutation Sponge",
-    "Boombox",
-    "Bizarre Stopwatch"
-}
-
+local allGears = {"Hatch Hammer", "Nametag", "Mutation Sponge", "Boombox", "Bizarre Stopwatch"}
 local selectedGearsMap = {}
-
-local _, _, _, _, setGearFullState =
-    createFeatureWithDropdown(
-        Pages.Main,
-        "Auto Buy Gear",
-        false,
-        allGears,
-        selectedGearsMap,
-        function(state)
-            if state then
-                startReliableBuyLoop(
-                    "AutoBuySelectedGear",
-                    function()
-                        local list = {}
-
-                        for itemName, active in pairs(selectedGearsMap) do
-                            if active then
-                                table.insert(list, itemName)
-                            end
-                        end
-
-                        return list
-                    end,
-                    function(item)
-                        if BuyItemRemote then
-                            BuyItemRemote:FireServer(item)
-                        end
-                    end
-                )
-            else
-                stopReliableBuyLoop("AutoBuySelectedGear")
-            end
-        end
-    )
+local _, gearSwitch, gearCircle, gearDot, setGearFullState = createFeatureWithDropdown(Pages.Main, "Auto Buy Gear", false, allGears, selectedGearsMap, function(state)
+    if state then
+        startReliableBuyLoop("AutoBuySelectedGear", function()
+            local list = {}
+            for k, v in pairs(selectedGearsMap) do if v then table.insert(list, k) end end
+            return list
+        end, function(item)
+            local buyEvent = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("BuyItem")
+            if buyEvent then buyEvent:FireServer(item) end
+        end)
+    else
+        stopReliableBuyLoop("AutoBuySelectedGear")
+    end
+end)
 
 setAutoGearState = function(state, selectAll)
-    if setGearFullState then
-        setGearFullState(state, selectAll)
-    end
+    if setGearFullState then setGearFullState(state, selectAll) end
 end
 
-local allMerchantItems = {
-    "Moonlit Scroll",
-    "Chilly Scroll",
-    "Toasty Scroll",
-    "Tranquil Scroll",
-    "Shocked Scroll",
-    "Gold Scroll",
-    "Glitched Scroll",
-    "Rainbow Scroll",
-    "Totem Of Might",
-    "Totem Of Marrow",
-    "Totem Of Stars",
-    "Totem Of Status",
-    "Gilded Hatch Hammer",
-    "Raygun",
-    "Alien Tesla"
-}
-
+local allMerchantItems = {"Moonlit Scroll", "Chilly Scroll", "Toasty Scroll", "Tranquil Scroll", "Shocked Scroll", "Gold Scroll", "Glitched Scroll", "Rainbow Scroll", "Totem Of Might", "Totem Of Marrow", "Totem Of Stars", "Totem Of Status", "Gilded Hatch Hammer", "Raygun", "Alien Tesla"}
 local selectedMerchantMap = {}
-
-local _, _, _, _, setMerchantFullState =
-    createFeatureWithDropdown(
-        Pages.Main,
-        "Auto Buy Merchant",
-        false,
-        allMerchantItems,
-        selectedMerchantMap,
-        function(state)
-            if state then
-                startReliableBuyLoop(
-                    "AutoBuySelectedMerchant",
-                    function()
-                        local list = {}
-
-                        for itemName, active in pairs(selectedMerchantMap) do
-                            if active then
-                                table.insert(list, itemName)
-                            end
-                        end
-
-                        return list
-                    end,
-                    function(item)
-                        if BuyMerchantItemRemote then
-                            BuyMerchantItemRemote:FireServer(item)
-                        end
-                    end
-                )
-            else
-                stopReliableBuyLoop("AutoBuySelectedMerchant")
-            end
-        end
-    )
+local _, merchantSwitch, merchantCircle, merchantDot, setMerchantFullState = createFeatureWithDropdown(Pages.Main, "Auto Buy Merchant", false, allMerchantItems, selectedMerchantMap, function(state)
+    if state then
+        startReliableBuyLoop("AutoBuySelectedMerchant", function()
+            local list = {}
+            for k, v in pairs(selectedMerchantMap) do if v then table.insert(list, k) end end
+            return list
+        end, function(item)
+            if BuyMerchantItemRemote then BuyMerchantItemRemote:FireServer(item) end
+        end)
+    else
+        stopReliableBuyLoop("AutoBuySelectedMerchant")
+    end
+end)
 
 setAutoMerchantState = function(state, selectAll)
-    if setMerchantFullState then
-        setMerchantFullState(state, selectAll)
-    end
+    if setMerchantFullState then setMerchantFullState(state, selectAll) end
 end
 
+--------------------------------------------------------------------------------
+-- TAB 2: CRAFTING
+--------------------------------------------------------------------------------
 createCategoryHeader(Pages.Crafting, "Crafting Automation")
 
 local selectedFuseChoice = "Pumpkin or Shinigami"
-
-local function createDropdown(
-    parent,
-    titleText,
-    options,
-    defaultOption,
-    callback
-)
+local function createDropdown(parent, titleText, options, defaultOption, callback)
     local DropFrame = Instance.new("Frame")
     DropFrame.Parent = parent
     DropFrame.BackgroundColor3 = themes.Dark.DropBg
     DropFrame.Size = UDim2.new(1, -4, 0, 34)
     DropFrame.ClipsDescendants = true
-
     Instance.new("UICorner", DropFrame).CornerRadius = UDim.new(0, 6)
     table.insert(themeRegistry.DropFrames, DropFrame)
 
@@ -1686,7 +1095,6 @@ local function createDropdown(
     Label.TextColor3 = themes.Dark.TextMain
     Label.TextSize = 10
     Label.TextXAlignment = Enum.TextXAlignment.Left
-
     table.insert(themeRegistry.TextLabels, Label)
 
     local SelectBtn = Instance.new("TextButton")
@@ -1699,7 +1107,6 @@ local function createDropdown(
     SelectBtn.TextColor3 = themes.Dark.SelectText
     SelectBtn.TextSize = 9
     SelectBtn.AutoButtonColor = false
-
     Instance.new("UICorner", SelectBtn).CornerRadius = UDim.new(0, 4)
     table.insert(themeRegistry.SelectBtns, SelectBtn)
 
@@ -1710,21 +1117,10 @@ local function createDropdown(
     DropListContainer.Size = UDim2.new(1, 0, 0, #options * 24)
 
     local isOpen = false
-
     SelectBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
-
-        local targetHeight = isOpen
-            and (34 + (#options * 24))
-            or 34
-
-        TweenService:Create(
-            DropFrame,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {
-                Size = UDim2.new(1, -4, 0, targetHeight)
-            }
-        ):Play()
+        local targetHeight = isOpen and (34 + (#options * 24)) or 34
+        TweenService:Create(DropFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Size = UDim2.new(1, -4, 0, targetHeight)}):Play()
     end)
 
     for i, opt in ipairs(options) do
@@ -1738,70 +1134,29 @@ local function createDropdown(
         OptBtn.TextColor3 = themes.Dark.OptText
         OptBtn.TextSize = 9
         OptBtn.AutoButtonColor = false
-
         Instance.new("UICorner", OptBtn).CornerRadius = UDim.new(0, 4)
         table.insert(themeRegistry.OptBtns, OptBtn)
 
         OptBtn.MouseButton1Click:Connect(function()
             SelectBtn.Text = opt
             isOpen = false
-
-            TweenService:Create(
-                DropFrame,
-                TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-                {
-                    Size = UDim2.new(1, -4, 0, 34)
-                }
-            ):Play()
-
-            if callback then
-                callback(opt)
-            end
+            TweenService:Create(DropFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Size = UDim2.new(1, -4, 0, 34)}):Play()
+            if callback then callback(opt) end
         end)
     end
-
     return DropFrame
 end
 
-createDropdown(
-    Pages.Crafting,
-    "Fuse Target",
-    {
-        "Pumpkin or Shinigami",
-        "Disco True Carrot"
-    },
-    "Pumpkin or Shinigami",
-    function(choice)
-        selectedFuseChoice = choice
-    end
-)
+createDropdown(Pages.Crafting, "Fuse Target", {"Pumpkin or Shinigami", "Disco True Carrot"}, "Pumpkin or Shinigami", function(choice)
+    selectedFuseChoice = choice
+end)
 
 local AutoFusePetActive = false
-
-local _, _, _, _, setFuseState =
-    createFeatureToggle(
-        Pages.Crafting,
-        "Auto Fuse Pet",
-        false,
-        function(state)
-            AutoFusePetActive = state
-        end
-    )
-
+local _, _, _, _, setFuseState = createFeatureToggle(Pages.Crafting, "Auto Fuse Pet", false, function(state) AutoFusePetActive = state end)
 setAutoFuseState = setFuseState
 
 local AutoClaimFuseActive = false
-
-local _, _, _, _, setClaimFuseState =
-    createFeatureToggle(
-        Pages.Crafting,
-        "Auto Claim Fuse Pet",
-        false,
-        function(state)
-            AutoClaimFuseActive = state
-        end
-    )
-
+local _, _, _, _, setClaimFuseState = createFeatureToggle(Pages.Crafting, "Auto Claim Fuse Pet", false, function(state) AutoClaimFuseActive = state end)
 setAutoClaimFuseState = setClaimFuseState
 
 task.spawn(function()
@@ -1810,13 +1165,10 @@ task.spawn(function()
             pcall(function()
                 FuseActionRemote:InvokeServer("Place", "Capybara")
                 task.wait(3)
-
                 FuseActionRemote:InvokeServer("Place", "Plant")
                 task.wait(3)
-
                 FuseActionRemote:InvokeServer("Fuse", "4")
             end)
-
             task.wait(60)
         else
             task.wait(0.5)
@@ -1827,10 +1179,7 @@ end)
 task.spawn(function()
     while true do
         if AutoClaimFuseActive and FuseActionRemote then
-            pcall(function()
-                FuseActionRemote:InvokeServer("Collect")
-            end)
-
+            pcall(function() FuseActionRemote:InvokeServer("Collect") end)
             task.wait(60)
         else
             task.wait(0.5)
@@ -1838,31 +1187,21 @@ task.spawn(function()
     end
 end)
 
+--------------------------------------------------------------------------------
+-- TAB 3: GIFTING
+--------------------------------------------------------------------------------
 createCategoryHeader(Pages.Gifting, "Auto Gifting System")
 
 local selectedTargetPlayer = nil
 local selectedItemsMap = {}
 local scriptStarted = false
-
-local validItems = {
-    "Angel Capybara",
-    "Disco Capybara",
-    "Shinigami Capybara",
-    "True Carrot",
-    "Disco True Carrot",
-    "Pumpking",
-    "Pumkin",
-    "Dragonfruit",
-    "Dr Carbot MkII",
-    "Dr Carbot MkIII"
-}
+local validItems = {"Angel Capybara", "Disco Capybara", "Shinigami Capybara", "True Carrot", "Disco True Carrot", "Pumpking", "Pumkin", "Dragonfruit", "Dr Carbot MkII", "Dr Carbot MkIII"}
 
 local TargetDropFrame = Instance.new("Frame")
 TargetDropFrame.Parent = Pages.Gifting
 TargetDropFrame.BackgroundColor3 = themes.Dark.DropBg
 TargetDropFrame.Size = UDim2.new(1, -4, 0, 34)
 TargetDropFrame.ClipsDescendants = true
-
 Instance.new("UICorner", TargetDropFrame).CornerRadius = UDim.new(0, 6)
 table.insert(themeRegistry.DropFrames, TargetDropFrame)
 
@@ -1876,7 +1215,6 @@ TargetLabel.Text = "Target User"
 TargetLabel.TextColor3 = themes.Dark.TextMain
 TargetLabel.TextSize = 10
 TargetLabel.TextXAlignment = Enum.TextXAlignment.Left
-
 table.insert(themeRegistry.TextLabels, TargetLabel)
 
 local TargetSelectBtn = Instance.new("TextButton")
@@ -1889,7 +1227,6 @@ TargetSelectBtn.Text = "Select User ▼"
 TargetSelectBtn.TextColor3 = themes.Dark.SelectText
 TargetSelectBtn.TextSize = 9
 TargetSelectBtn.AutoButtonColor = false
-
 Instance.new("UICorner", TargetSelectBtn).CornerRadius = UDim.new(0, 4)
 table.insert(themeRegistry.SelectBtns, TargetSelectBtn)
 
@@ -1903,20 +1240,12 @@ TargetListContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 TargetListContainer.ScrollBarThickness = 2
 
 local isTargetOpen = false
-
 local function updateTargetDropdown()
-    for _, child in ipairs(TargetListContainer:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
-        end
-    end
-
+    for _, child in ipairs(TargetListContainer:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     local count = 0
-
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            count += 1
-
+            count = count + 1
             local OptBtn = Instance.new("TextButton")
             OptBtn.Parent = TargetListContainer
             OptBtn.BackgroundColor3 = themes.Dark.OptBg
@@ -1927,23 +1256,13 @@ local function updateTargetDropdown()
             OptBtn.TextColor3 = themes.Dark.OptText
             OptBtn.TextSize = 9
             OptBtn.AutoButtonColor = false
-
             Instance.new("UICorner", OptBtn).CornerRadius = UDim.new(0, 4)
-
             table.insert(themeRegistry.OptBtns, OptBtn)
-
             OptBtn.MouseButton1Click:Connect(function()
                 selectedTargetPlayer = player
                 TargetSelectBtn.Text = player.Name
                 isTargetOpen = false
-
-                TweenService:Create(
-                    TargetDropFrame,
-                    TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-                    {
-                        Size = UDim2.new(1, -4, 0, 34)
-                    }
-                ):Play()
+                TweenService:Create(TargetDropFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Size = UDim2.new(1, -4, 0, 34)}):Play()
             end)
         end
     end
@@ -1951,22 +1270,10 @@ end
 
 TargetSelectBtn.MouseButton1Click:Connect(function()
     updateTargetDropdown()
-
     isTargetOpen = not isTargetOpen
-
     local playersCount = math.max(#Players:GetPlayers() - 1, 1)
-
-    local targetHeight = isTargetOpen
-        and math.clamp(34 + (playersCount * 24), 34, 120)
-        or 34
-
-    TweenService:Create(
-        TargetDropFrame,
-        TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-        {
-            Size = UDim2.new(1, -4, 0, targetHeight)
-        }
-    ):Play()
+    local targetHeight = isTargetOpen and math.clamp(34 + (playersCount * 24), 34, 120) or 34
+    TweenService:Create(TargetDropFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Size = UDim2.new(1, -4, 0, targetHeight)}):Play()
 end)
 
 local ItemDropFrame = Instance.new("Frame")
@@ -1974,7 +1281,6 @@ ItemDropFrame.Parent = Pages.Gifting
 ItemDropFrame.BackgroundColor3 = themes.Dark.DropBg
 ItemDropFrame.Size = UDim2.new(1, -4, 0, 34)
 ItemDropFrame.ClipsDescendants = true
-
 Instance.new("UICorner", ItemDropFrame).CornerRadius = UDim.new(0, 6)
 table.insert(themeRegistry.DropFrames, ItemDropFrame)
 
@@ -1988,7 +1294,6 @@ ItemLabel.Text = "Items to Gift"
 ItemLabel.TextColor3 = themes.Dark.TextMain
 ItemLabel.TextSize = 10
 ItemLabel.TextXAlignment = Enum.TextXAlignment.Left
-
 table.insert(themeRegistry.TextLabels, ItemLabel)
 
 local ItemSelectBtn = Instance.new("TextButton")
@@ -2001,7 +1306,6 @@ ItemSelectBtn.Text = "Select Items ▼"
 ItemSelectBtn.TextColor3 = themes.Dark.SelectText
 ItemSelectBtn.TextSize = 9
 ItemSelectBtn.AutoButtonColor = false
-
 Instance.new("UICorner", ItemSelectBtn).CornerRadius = UDim.new(0, 4)
 table.insert(themeRegistry.SelectBtns, ItemSelectBtn)
 
@@ -2015,46 +1319,22 @@ ItemListContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 ItemListContainer.ScrollBarThickness = 2
 
 local giftOptionButtons = {}
-
 local function updateItemButtonText()
     local count = 0
     local firstName = ""
-
     for _, itemName in ipairs(validItems) do
         if selectedItemsMap[itemName] then
-            count += 1
-
-            if firstName == "" then
-                firstName = itemName
-            end
+            count = count + 1
+            if firstName == "" then firstName = itemName end
         end
     end
-
-    if count == 0 then
-        ItemSelectBtn.Text = "Select Items ▼"
-    elseif count == #validItems then
-        ItemSelectBtn.Text = "All Selected ▼"
-    elseif count == 1 then
-        ItemSelectBtn.Text = firstName
-    else
-        ItemSelectBtn.Text = "Selected (" .. count .. ") ▼"
-    end
+    if count == 0 then ItemSelectBtn.Text = "Select Items ▼"
+    elseif count == #validItems then ItemSelectBtn.Text = "All Selected ▼"
+    elseif count == 1 then ItemSelectBtn.Text = firstName
+    else ItemSelectBtn.Text = "Selected (" .. count .. ") ▼" end
 end
 
-local GiftAllBtn = Instance.new("TextButton")
-GiftAllBtn.Parent = ItemListContainer
-GiftAllBtn.Position = UDim2.new(0, 6, 0, 0)
-GiftAllBtn.Size = UDim2.new(1, -12, 0, 22)
-GiftAllBtn.Font = Enum.Font.GothamBold
-GiftAllBtn.TextSize = 9
-GiftAllBtn.AutoButtonColor = false
-
-Instance.new("UICorner", GiftAllBtn).CornerRadius = UDim.new(0, 4)
-table.insert(themeRegistry.OptBtns, GiftAllBtn)
-
 local function refreshGiftOptionUI()
-    local allSelected = #validItems > 0
-
     for itemName, btn in pairs(giftOptionButtons) do
         if selectedItemsMap[itemName] then
             btn.BackgroundColor3 = Color3.fromRGB(70, 45, 90)
@@ -2064,43 +1344,29 @@ local function refreshGiftOptionUI()
             btn.BackgroundColor3 = themes.Dark.OptBg
             btn.Text = "[  ] " .. itemName
             btn.TextColor3 = themes.Dark.OptText
-            allSelected = false
         end
     end
-
-    if allSelected then
-        GiftAllBtn.BackgroundColor3 = Color3.fromRGB(70, 45, 90)
-        GiftAllBtn.Text = "[X] All"
-        GiftAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    else
-        GiftAllBtn.BackgroundColor3 = themes.Dark.OptBg
-        GiftAllBtn.Text = "[  ] All"
-        GiftAllBtn.TextColor3 = themes.Dark.OptText
-    end
-
     updateItemButtonText()
 end
 
+local GiftAllBtn = Instance.new("TextButton")
+GiftAllBtn.Parent = ItemListContainer
+GiftAllBtn.Position = UDim2.new(0, 6, 0, 0)
+GiftAllBtn.Size = UDim2.new(1, -12, 0, 22)
+GiftAllBtn.Font = Enum.Font.GothamBold
+GiftAllBtn.TextSize = 9
+GiftAllBtn.AutoButtonColor = false
+Instance.new("UICorner", GiftAllBtn).CornerRadius = UDim.new(0, 4)
+table.insert(themeRegistry.OptBtns, GiftAllBtn)
+
 GiftAllBtn.MouseButton1Click:Connect(function()
-    local allSelected = #validItems > 0
-
-    for _, itemName in ipairs(validItems) do
-        if not selectedItemsMap[itemName] then
-            allSelected = false
-            break
-        end
-    end
-
+    local allSelected = true
+    for _, itemName in ipairs(validItems) do if not selectedItemsMap[itemName] then allSelected = false; break end end
     if allSelected then
-        for _, itemName in ipairs(validItems) do
-            selectedItemsMap[itemName] = nil
-        end
+        for _, itemName in ipairs(validItems) do selectedItemsMap[itemName] = nil end
     else
-        for _, itemName in ipairs(validItems) do
-            selectedItemsMap[itemName] = true
-        end
+        for _, itemName in ipairs(validItems) do selectedItemsMap[itemName] = true end
     end
-
     refreshGiftOptionUI()
 end)
 
@@ -2112,41 +1378,22 @@ for i, itemName in ipairs(validItems) do
     OptBtn.Font = Enum.Font.Gotham
     OptBtn.TextSize = 9
     OptBtn.AutoButtonColor = false
-
     Instance.new("UICorner", OptBtn).CornerRadius = UDim.new(0, 4)
-
     table.insert(themeRegistry.OptBtns, OptBtn)
     giftOptionButtons[itemName] = OptBtn
 
     OptBtn.MouseButton1Click:Connect(function()
-        if selectedItemsMap[itemName] then
-            selectedItemsMap[itemName] = nil
-        else
-            selectedItemsMap[itemName] = true
-        end
-
+        if selectedItemsMap[itemName] then selectedItemsMap[itemName] = nil else selectedItemsMap[itemName] = true end
         refreshGiftOptionUI()
     end)
 end
 
 local isItemOpen = false
-
 ItemSelectBtn.MouseButton1Click:Connect(function()
     refreshGiftOptionUI()
-
     isItemOpen = not isItemOpen
-
-    local targetHeight = isItemOpen
-        and math.clamp(34 + ((#validItems + 1) * 24), 34, 130)
-        or 34
-
-    TweenService:Create(
-        ItemDropFrame,
-        TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-        {
-            Size = UDim2.new(1, -4, 0, targetHeight)
-        }
-    ):Play()
+    local targetHeight = isItemOpen and math.clamp(34 + ((#validItems + 1) * 24), 34, 130) or 34
+    TweenService:Create(ItemDropFrame, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Size = UDim2.new(1, -4, 0, targetHeight)}):Play()
 end)
 
 local StartButton = Instance.new("TextButton")
@@ -2157,7 +1404,6 @@ StartButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 StartButton.Text = "START GIFTING"
 StartButton.TextSize = 11
 StartButton.Font = Enum.Font.GothamBold
-
 Instance.new("UICorner", StartButton).CornerRadius = UDim.new(0, 6)
 
 local StatusLabel = Instance.new("TextLabel")
@@ -2169,97 +1415,63 @@ StatusLabel.Text = "Configure settings and click Start..."
 StatusLabel.TextSize = 10
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
-
 table.insert(themeRegistry.SecondaryTexts, StatusLabel)
 
 StartButton.MouseButton1Click:Connect(function()
-    if not selectedTargetPlayer then
-        StatusLabel.Text = "Error: Select a target user!"
-        return
-    end
-
+    if not selectedTargetPlayer then StatusLabel.Text = "Error: Select a target user!"; return end
     scriptStarted = true
     StartButton.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
     StartButton.Text = "RUNNING..."
 end)
 
+--------------------------------------------------------------------------------
+-- TAB 4: REWARD
+--------------------------------------------------------------------------------
 createCategoryHeader(Pages.Reward, "Rewards")
 
-local _, _, _, _, setPlaytimeState =
-    createFeatureToggle(
-        Pages.Reward,
-        "Auto Claim Playtime",
-        false,
-        function(state)
-            _G.AutoClaimPlaytime = state
-
-            task.spawn(function()
-                while _G.AutoClaimPlaytime do
-                    for i = 1, 11 do
-                        if not _G.AutoClaimPlaytime then
-                            break
-                        end
-
-                        pcall(function()
-                            if ClaimPlaytimeRewardRemote then
-                                ClaimPlaytimeRewardRemote:FireServer(
-                                    "Reward" .. i
-                                )
-                            end
-                        end)
-
-                        task.wait(1)
-                    end
-
-                    task.wait(60)
-                end
-            end)
+local _, _, _, _, setPlaytimeState = createFeatureToggle(Pages.Reward, "Auto Claim Playtime", false, function(state)
+    _G.AutoClaimPlaytime = state
+    task.spawn(function()
+        while _G.AutoClaimPlaytime do
+            for i = 1, 11 do
+                if not _G.AutoClaimPlaytime then break end
+                pcall(function()
+                    if ClaimPlaytimeRewardRemote then ClaimPlaytimeRewardRemote:FireServer("Reward" .. i) end
+                end)
+                task.wait(1)
+            end
+            task.wait(60)
         end
-    )
-
+    end)
+end)
 setAutoPlaytimeState = setPlaytimeState
 
-local _, _, _, _, setDailyState =
-    createFeatureToggle(
-        Pages.Reward,
-        "Auto Claim Daily",
-        false,
-        function(state)
-            _G.AutoClaimDaily = state
-
-            task.spawn(function()
-                while _G.AutoClaimDaily do
-                    for i = 1, 7 do
-                        if not _G.AutoClaimDaily then
-                            break
-                        end
-
-                        pcall(function()
-                            if ClaimDailyRewardRemote then
-                                ClaimDailyRewardRemote:FireServer(
-                                    "Reward" .. i
-                                )
-                            end
-                        end)
-
-                        task.wait(1)
-                    end
-
-                    task.wait(60)
-                end
-            end)
+local _, _, _, _, setDailyState = createFeatureToggle(Pages.Reward, "Auto Claim Daily", false, function(state)
+    _G.AutoClaimDaily = state
+    task.spawn(function()
+        while _G.AutoClaimDaily do
+            for i = 1, 7 do
+                if not _G.AutoClaimDaily then break end
+                pcall(function()
+                    if ClaimDailyRewardRemote then ClaimDailyRewardRemote:FireServer("Reward" .. i) end
+                end)
+                task.wait(1)
+            end
+            task.wait(60)
         end
-    )
-
+    end)
+end)
 setAutoDailyState = setDailyState
 
+--------------------------------------------------------------------------------
+-- TAB 5: MISC (Speed, Jump Power, Fly, No Clip)
+--------------------------------------------------------------------------------
 createCategoryHeader(Pages.Misc, "Player Modifications")
 
 local SpeedFrame = Instance.new("Frame")
 SpeedFrame.Parent = Pages.Misc
 SpeedFrame.BackgroundColor3 = themes.Dark.FeatureBg
 SpeedFrame.Size = UDim2.new(1, -4, 0, 50)
-
 Instance.new("UICorner", SpeedFrame).CornerRadius = UDim.new(0, 6)
 table.insert(themeRegistry.FeatureFrames, SpeedFrame)
 
@@ -2273,7 +1485,6 @@ SpeedLabel.Text = "WalkSpeed: 16"
 SpeedLabel.TextColor3 = themes.Dark.TextMain
 SpeedLabel.TextSize = 10
 SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
-
 table.insert(themeRegistry.TextLabels, SpeedLabel)
 
 local SpeedSliderBg = Instance.new("TextButton")
@@ -2282,63 +1493,37 @@ SpeedSliderBg.BackgroundColor3 = themes.Dark.SelectBtn
 SpeedSliderBg.Position = UDim2.new(0, 10, 0, 25)
 SpeedSliderBg.Size = UDim2.new(1, -20, 0, 14)
 SpeedSliderBg.Text = ""
-
 Instance.new("UICorner", SpeedSliderBg).CornerRadius = UDim.new(0, 4)
 
 local SpeedSliderFill = Instance.new("Frame")
 SpeedSliderFill.Parent = SpeedSliderBg
 SpeedSliderFill.BackgroundColor3 = Color3.fromRGB(52, 199, 89)
 SpeedSliderFill.Size = UDim2.new(0, 0, 1, 0)
-
 Instance.new("UICorner", SpeedSliderFill).CornerRadius = UDim.new(0, 4)
 
 local function updateSpeed(input)
-    local pos = math.clamp(
-        (input.Position.X - SpeedSliderBg.AbsolutePosition.X)
-            / SpeedSliderBg.AbsoluteSize.X,
-        0,
-        1
-    )
-
+    local pos = math.clamp((input.Position.X - SpeedSliderBg.AbsolutePosition.X) / SpeedSliderBg.AbsoluteSize.X, 0, 1)
     local speedVal = math.floor(16 + (pos * 184))
-
     SpeedSliderFill.Size = UDim2.new(pos, 0, 1, 0)
     SpeedLabel.Text = "WalkSpeed: " .. speedVal
-
-    local character = LocalPlayer.Character
-    local hum = character and character:FindFirstChildOfClass("Humanoid")
-
-    if hum then
-        hum.WalkSpeed = speedVal
-    end
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed = speedVal end
 end
 
 local draggingSpeed = false
-
 SpeedSliderBg.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         draggingSpeed = true
         updateSpeed(input)
     end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         draggingSpeed = false
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if draggingSpeed
-        and (
-            input.UserInputType == Enum.UserInputType.MouseMovement
-            or input.UserInputType == Enum.UserInputType.Touch
-        ) then
-
+    if draggingSpeed and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         updateSpeed(input)
     end
 end)
@@ -2347,7 +1532,6 @@ local JumpFrame = Instance.new("Frame")
 JumpFrame.Parent = Pages.Misc
 JumpFrame.BackgroundColor3 = themes.Dark.FeatureBg
 JumpFrame.Size = UDim2.new(1, -4, 0, 50)
-
 Instance.new("UICorner", JumpFrame).CornerRadius = UDim.new(0, 6)
 table.insert(themeRegistry.FeatureFrames, JumpFrame)
 
@@ -2361,7 +1545,6 @@ JumpLabel.Text = "Jump Power: 50"
 JumpLabel.TextColor3 = themes.Dark.TextMain
 JumpLabel.TextSize = 10
 JumpLabel.TextXAlignment = Enum.TextXAlignment.Left
-
 table.insert(themeRegistry.TextLabels, JumpLabel)
 
 local JumpSliderBg = Instance.new("TextButton")
@@ -2370,32 +1553,20 @@ JumpSliderBg.BackgroundColor3 = themes.Dark.SelectBtn
 JumpSliderBg.Position = UDim2.new(0, 10, 0, 25)
 JumpSliderBg.Size = UDim2.new(1, -20, 0, 14)
 JumpSliderBg.Text = ""
-
 Instance.new("UICorner", JumpSliderBg).CornerRadius = UDim.new(0, 4)
 
 local JumpSliderFill = Instance.new("Frame")
 JumpSliderFill.Parent = JumpSliderBg
 JumpSliderFill.BackgroundColor3 = Color3.fromRGB(52, 199, 89)
 JumpSliderFill.Size = UDim2.new(0, 0, 1, 0)
-
 Instance.new("UICorner", JumpSliderFill).CornerRadius = UDim.new(0, 4)
 
 local function updateJump(input)
-    local pos = math.clamp(
-        (input.Position.X - JumpSliderBg.AbsolutePosition.X)
-            / JumpSliderBg.AbsoluteSize.X,
-        0,
-        1
-    )
-
+    local pos = math.clamp((input.Position.X - JumpSliderBg.AbsolutePosition.X) / JumpSliderBg.AbsoluteSize.X, 0, 1)
     local jumpVal = math.floor(50 + (pos * 250))
-
     JumpSliderFill.Size = UDim2.new(pos, 0, 1, 0)
     JumpLabel.Text = "Jump Power: " .. jumpVal
-
-    local character = LocalPlayer.Character
-    local hum = character and character:FindFirstChildOfClass("Humanoid")
-
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if hum then
         hum.UseJumpPower = true
         hum.JumpPower = jumpVal
@@ -2403,137 +1574,73 @@ local function updateJump(input)
 end
 
 local draggingJump = false
-
 JumpSliderBg.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         draggingJump = true
         updateJump(input)
     end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         draggingJump = false
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if draggingJump
-        and (
-            input.UserInputType == Enum.UserInputType.MouseMovement
-            or input.UserInputType == Enum.UserInputType.Touch
-        ) then
-
+    if draggingJump and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         updateJump(input)
     end
 end)
 
-createFeatureToggle(
-    Pages.Misc,
-    "Fly Mode",
-    false,
-    function(state)
-        _G.FlyActive = state
-
-        task.spawn(function()
-            local bg
-            local bv
-
-            while _G.FlyActive do
-                task.wait()
-
-                local character = LocalPlayer.Character
-                local hrp = character
-                    and character:FindFirstChild("HumanoidRootPart")
-
-                if hrp then
-                    bg = hrp:FindFirstChild("FlyBodyGyro")
-                    bv = hrp:FindFirstChild("FlyBodyVelocity")
-
-                    if not bg then
-                        bg = Instance.new("BodyGyro")
-                        bg.Name = "FlyBodyGyro"
-                        bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-                        bg.Parent = hrp
-                    end
-
-                    if not bv then
-                        bv = Instance.new("BodyVelocity")
-                        bv.Name = "FlyBodyVelocity"
-                        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                        bv.Velocity = Vector3.zero
-                        bv.Parent = hrp
-                    end
-
-                    local camera = Workspace.CurrentCamera
-
-                    if camera then
-                        bg.CFrame = camera.CFrame
-                        bv.Velocity = camera.CFrame.LookVector * 50
-                    end
+createFeatureToggle(Pages.Misc, "Fly Mode", false, function(state)
+    _G.FlyActive = state
+    task.spawn(function()
+        local bg, bv
+        while _G.FlyActive do
+            task.wait()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                if not hrp:FindFirstChild("FlyBodyGyro") then
+                    bg = Instance.new("BodyGyro", hrp)
+                    bg.Name = "FlyBodyGyro"
+                    bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+                    bv = Instance.new("BodyVelocity", hrp)
+                    bv.Name = "FlyBodyVelocity"
+                    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                    bv.Velocity = Vector3.new(0, 0, 0)
                 end
+                bg.CFrame = workspace.CurrentCamera.CFrame
+                bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * 50
             end
-
-            local character = LocalPlayer.Character
-            local hrp = character
-                and character:FindFirstChild("HumanoidRootPart")
-
-            if hrp then
-                local oldGyro = hrp:FindFirstChild("FlyBodyGyro")
-                local oldVelocity = hrp:FindFirstChild("FlyBodyVelocity")
-
-                if oldGyro then
-                    oldGyro:Destroy()
-                end
-
-                if oldVelocity then
-                    oldVelocity:Destroy()
-                end
-            end
-        end)
-    end
-)
-
-local noClipActive = false
-
-createFeatureToggle(
-    Pages.Misc,
-    "No Clip",
-    false,
-    function(state)
-        noClipActive = state
-    end
-)
-
-RunService.Stepped:Connect(function()
-    if not noClipActive then
-        return
-    end
-
-    local character = LocalPlayer.Character
-
-    if not character then
-        return
-    end
-
-    for _, child in ipairs(character:GetDescendants()) do
-        if child:IsA("BasePart") then
-            child.CanCollide = false
         end
-    end
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            if char.HumanoidRootPart:FindFirstChild("FlyBodyGyro") then char.HumanoidRootPart.FlyBodyGyro:Destroy() end
+            if char.HumanoidRootPart:FindFirstChild("FlyBodyVelocity") then char.HumanoidRootPart.FlyBodyVelocity:Destroy() end
+        end
+    end)
 end)
 
+createFeatureToggle(Pages.Misc, "No Clip", false, function(state)
+    _G.NoClipActive = state
+    game:GetService("RunService").Stepped:Connect(function()
+        if _G.NoClipActive and LocalPlayer.Character then
+            for _, child in pairs(LocalPlayer.Character:GetDescendants()) do
+                if child:IsA("BasePart") then child.CanCollide = false end
+            end
+        end
+    end)
+end)
+
+--------------------------------------------------------------------------------
+-- TAB 6: SETTINGS
+--------------------------------------------------------------------------------
 createCategoryHeader(Pages.Settings, "Theme Mode")
 
 local ModeToggleFrame = Instance.new("Frame")
 ModeToggleFrame.Parent = Pages.Settings
 ModeToggleFrame.BackgroundColor3 = themes.Dark.FeatureBg
 ModeToggleFrame.Size = UDim2.new(1, -4, 0, 34)
-
 Instance.new("UICorner", ModeToggleFrame).CornerRadius = UDim.new(0, 6)
 table.insert(themeRegistry.FeatureFrames, ModeToggleFrame)
 
@@ -2547,7 +1654,6 @@ ModeLabel.Text = "Dark Mode"
 ModeLabel.TextColor3 = themes.Dark.TextMain
 ModeLabel.TextSize = 10
 ModeLabel.TextXAlignment = Enum.TextXAlignment.Left
-
 table.insert(themeRegistry.TextLabels, ModeLabel)
 
 local ModeStatusDot = Instance.new("Frame")
@@ -2555,7 +1661,6 @@ ModeStatusDot.Parent = ModeToggleFrame
 ModeStatusDot.BackgroundColor3 = Color3.fromRGB(52, 199, 89)
 ModeStatusDot.Position = UDim2.new(0, 8, 0.5, -3)
 ModeStatusDot.Size = UDim2.new(0, 6, 0, 6)
-
 Instance.new("UICorner", ModeStatusDot).CornerRadius = UDim.new(1, 0)
 
 local ModeSwitchBtn = Instance.new("TextButton")
@@ -2565,7 +1670,6 @@ ModeSwitchBtn.Position = UDim2.new(1, -42, 0.5, -9)
 ModeSwitchBtn.Size = UDim2.new(0, 34, 0, 18)
 ModeSwitchBtn.AutoButtonColor = false
 ModeSwitchBtn.Text = ""
-
 Instance.new("UICorner", ModeSwitchBtn).CornerRadius = UDim.new(1, 0)
 
 local ModeCircle = Instance.new("Frame")
@@ -2573,69 +1677,22 @@ ModeCircle.Parent = ModeSwitchBtn
 ModeCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 ModeCircle.Position = UDim2.new(1, -16, 0.5, -7)
 ModeCircle.Size = UDim2.new(0, 14, 0, 14)
-
 Instance.new("UICorner", ModeCircle).CornerRadius = UDim.new(1, 0)
 
 local isDarkMode = true
-
 ModeSwitchBtn.MouseButton1Click:Connect(function()
     isDarkMode = not isDarkMode
-
     if isDarkMode then
         ModeLabel.Text = "Dark Mode"
-
-        TweenService:Create(
-            ModeSwitchBtn,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {
-                BackgroundColor3 = Color3.fromRGB(52, 199, 89)
-            }
-        ):Play()
-
-        TweenService:Create(
-            ModeCircle,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {
-                Position = UDim2.new(1, -16, 0.5, -7)
-            }
-        ):Play()
-
-        TweenService:Create(
-            ModeStatusDot,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {
-                BackgroundColor3 = Color3.fromRGB(52, 199, 89)
-            }
-        ):Play()
-
+        TweenService:Create(ModeSwitchBtn, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(52, 199, 89)}):Play()
+        TweenService:Create(ModeCircle, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Position = UDim2.new(1, -16, 0.5, -7)}):Play()
+        TweenService:Create(ModeStatusDot, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(52, 199, 89)}):Play()
         applyTheme("Dark")
     else
         ModeLabel.Text = "Light Mode"
-
-        TweenService:Create(
-            ModeSwitchBtn,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {
-                BackgroundColor3 = Color3.fromRGB(200, 200, 205)
-            }
-        ):Play()
-
-        TweenService:Create(
-            ModeCircle,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {
-                Position = UDim2.new(0, 2, 0.5, -7)
-            }
-        ):Play()
-
-        TweenService:Create(
-            ModeStatusDot,
-            TweenInfo.new(0.2, Enum.EasingStyle.Sine),
-            {
-                BackgroundColor3 = Color3.fromRGB(150, 150, 155)
-            }
-        ):Play()
-
+        TweenService:Create(ModeSwitchBtn, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(200, 200, 205)}):Play()
+        TweenService:Create(ModeCircle, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Position = UDim2.new(0, 2, 0.5, -7)}):Play()
+        TweenService:Create(ModeStatusDot, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(150, 150, 155)}):Play()
         applyTheme("Light")
     end
 end)
@@ -2643,98 +1700,44 @@ end)
 createSectionSeparator(Pages.Settings)
 createCategoryHeader(Pages.Settings, "Preferences")
 
-local antiAfkActive = false
-
-local _, _, _, _, setAntiAfkState =
-    createFeatureToggle(
-        Pages.Settings,
-        "Anti-AFK System",
-        false,
-        function(state)
-            antiAfkActive = state
-        end
-    )
-
+local _G_AntiAfkActive = false
+local _, _, _, _, setAntiAfkState = createFeatureToggle(Pages.Settings, "Anti-AFK System", false, function(state) _G_AntiAfkActive = state end)
 setAutoAntiAfkState = setAntiAfkState
 
+local VirtualUser = game:GetService("VirtualUser")
 LocalPlayer.Idled:Connect(function()
-    if not antiAfkActive then
-        return
+    if _G_AntiAfkActive then
+        VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
     end
-
-    VirtualUser:Button2Down(
-        Vector2.new(0, 0),
-        Workspace.CurrentCamera.CFrame
-    )
-
-    task.wait(1)
-
-    VirtualUser:Button2Up(
-        Vector2.new(0, 0),
-        Workspace.CurrentCamera.CFrame
-    )
 end)
 
-local antiLagActive = false
-local antiLagConnection = nil
-
-local function applyAntiLagPart(obj)
-    if obj:IsA("BasePart") then
-        obj.Color = Color3.fromRGB(128, 128, 128)
-        obj.Material = Enum.Material.SmoothPlastic
-    end
-end
-
-local function enableAntiLag()
-    pcall(function()
-        for _, child in ipairs(Lighting:GetChildren()) do
-            if child:IsA("PostEffect")
-                or child:IsA("Atmosphere")
-                or child:IsA("Sky")
-                or child:IsA("Clouds") then
-
-                child:Destroy()
+local _, _, _, _, setAntiLagState = createFeatureToggle(Pages.Settings, "Anti-Lag System", false, function(state)
+    if state then
+        pcall(function()
+            for _, child in ipairs(Lighting:GetChildren()) do
+                if child:IsA("PostEffect") or child:IsA("Atmosphere") or child:IsA("Sky") or child:IsA("Clouds") then child:Destroy() end
             end
-        end
-
-        Lighting.GlobalShadows = false
-        Lighting.FogEnd = 9e9
-
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            applyAntiLagPart(obj)
-        end
-
-        if antiLagConnection then
-            antiLagConnection:Disconnect()
-            antiLagConnection = nil
-        end
-
-        antiLagConnection = Workspace.DescendantAdded:Connect(function(obj)
-            if antiLagActive then
-                applyAntiLagPart(obj)
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 9e9
+            
+            -- Change all models and parts in workspace to grey color
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    obj.Color = Color3.fromRGB(128, 128, 128)
+                    obj.Material = Enum.Material.SmoothPlastic
+                end
             end
+            
+            -- Automatically color future parts/models spawned in workspace
+            Workspace.DescendantAdded:Connect(function(obj)
+                if obj:IsA("BasePart") then
+                    obj.Color = Color3.fromRGB(128, 128, 128)
+                    obj.Material = Enum.Material.SmoothPlastic
+                end
+            end)
         end)
-    end)
-end
-
-local _, _, _, _, setAntiLagState =
-    createFeatureToggle(
-        Pages.Settings,
-        "Anti-Lag System",
-        false,
-        function(state)
-            antiLagActive = state
-
-            if state then
-                enableAntiLag()
-            elseif antiLagConnection then
-                antiLagConnection:Disconnect()
-                antiLagConnection = nil
-            end
-        end
-    )
-
+    end
+end)
 setAutoAntiLagState = setAntiLagState
-
-refreshGiftOptionUI()
-applyTheme("Dark")
