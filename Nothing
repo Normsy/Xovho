@@ -162,6 +162,7 @@ local BuyEventShopItemRemote = Remotes and Remotes:FindFirstChild("BuyEventShopI
 local SummonBossEvent = Remotes and Remotes:FindFirstChild("SummonBoss") or ReplicatedStorage:FindFirstChild("SummonBoss", true)
 local ClaimPlaytimeRewardRemote = Remotes and Remotes:FindFirstChild("ClaimPlaytimeReward") or ReplicatedStorage:FindFirstChild("ClaimPlaytimeReward", true)
 local ClaimDailyRewardRemote = Remotes and Remotes:FindFirstChild("ClaimDailyReward") or ReplicatedStorage:FindFirstChild("ClaimDailyReward", true)
+local CollectionMachineRemote = Remotes and Remotes:FindFirstChild("CollectionMachine") or ReplicatedStorage:FindFirstChild("CollectionMachine", true)
 
 --------------------------------------------------------------------------------
 -- Theme Management Table & Registry
@@ -446,7 +447,7 @@ for name, page in pairs(Pages) do
     page.BackgroundTransparency = 1
     page.Position = UDim2.new(0, 114, 0, 38)
     page.Size = UDim2.new(0, 260, 0, 206)
-    page.CanvasSize = UDim2.new(0, 0, 0, 700)
+    page.CanvasSize = UDim2.new(0, 0, 0, 750)
     page.ScrollBarThickness = 2
     page.Visible = (name == "Main")
     
@@ -811,7 +812,7 @@ local function createFeatureToggle(parent, titleText, defaultState, callback)
 end
 
 --------------------------------------------------------------------------------
--- Helper Loops & Utilities (Updated Auto Buy: 4 iterations, 5-minute cooldown)
+-- Helper Loops & Utilities
 --------------------------------------------------------------------------------
 local activeBuyLoops = {}
 local function startReliableBuyLoop(loopKey, getItemsFunc, buyRemoteFunc)
@@ -819,7 +820,6 @@ local function startReliableBuyLoop(loopKey, getItemsFunc, buyRemoteFunc)
     activeBuyLoops[loopKey] = true
     task.spawn(function()
         while activeBuyLoops[loopKey] do
-            -- Loop 4 times
             for i = 1, 4 do
                 if not activeBuyLoops[loopKey] then break end
                 local success, items = pcall(getItemsFunc)
@@ -839,8 +839,7 @@ local function startReliableBuyLoop(loopKey, getItemsFunc, buyRemoteFunc)
                 task.wait(1)
             end
             
-            -- Wait 2 minutes before buying again (150 seconds)
-            local waitTime = 150
+            local waitTime = 300
             while waitTime > 0 and activeBuyLoops[loopKey] do
                 task.wait(1)
                 waitTime = waitTime - 1
@@ -875,8 +874,7 @@ end
 createCategoryHeader(Pages.Main, "All In One")
 
 local setAutoScrapState, setAutoEventShopState, setAutoBossState, setAutoEggState, setAutoGearState, setAutoMerchantState
-local setAutoCollectState
-local setAutoFuseState, setAutoClaimFuseState, setAutoPlaytimeState, setAutoDailyState, setAutoAntiAfkState, setAutoAntiLagState
+local setAutoFuseState, setAutoClaimFuseState, setAutoPlaytimeState, setAutoDailyState, setAutoAntiAfkState, setAutoAntiLagState, setAutoCollectMoneyState
 
 createFeatureToggle(Pages.Main, "Enable All Main Features", false, function(state)
     if setAutoScrapState then setAutoScrapState(state, true) end
@@ -885,13 +883,13 @@ createFeatureToggle(Pages.Main, "Enable All Main Features", false, function(stat
     if setAutoEggState then setAutoEggState(state, true) end
     if setAutoGearState then setAutoGearState(state, true) end
     if setAutoMerchantState then setAutoMerchantState(state, true) end
-    if setAutoCollectState then setAutoCollectState(state) end
     if setAutoFuseState then setAutoFuseState(state) end
     if setAutoClaimFuseState then setAutoClaimFuseState(state) end
     if setAutoPlaytimeState then setAutoPlaytimeState(state) end
     if setAutoDailyState then setAutoDailyState(state) end
     if setAutoAntiAfkState then setAutoAntiAfkState(state) end
     if setAutoAntiLagState then setAutoAntiLagState(state) end
+    if setAutoCollectMoneyState then setAutoCollectMoneyState(state) end
 end)
 
 createSectionSeparator(Pages.Main)
@@ -1072,45 +1070,33 @@ setAutoMerchantState = function(state, selectAll)
     if setMerchantFullState then setMerchantFullState(state, selectAll) end
 end
 
---------------------------------------------------------------------------------
--- AUTO COLLECT MONEY
---------------------------------------------------------------------------------
-
 createSectionSeparator(Pages.Main)
-createCategoryHeader(Pages.Main, "Money")
+createCategoryHeader(Pages.Main, "Automation Utilities")
 
-local AutoCollectMoneyActive = false
+local autoCollectMoneyActive = false
+local _, collectSwitch, collectCircle, collectDot, setCollectMoneyFullState = createFeatureToggle(Pages.Main, "Auto Collect Money", false, function(state)
+    autoCollectMoneyActive = state
+end)
 
-local _, _, _, _, setCollectState =
-    createFeatureToggle(
-        Pages.Main,
-        "Auto Collect Money",
-        false,
-        function(state)
-            AutoCollectMoneyActive = state
-        end
-    )
-
-setAutoCollectState = setCollectState
+setAutoCollectMoneyState = setCollectMoneyFullState
 
 task.spawn(function()
     while true do
-        if AutoCollectMoneyActive then
+        if autoCollectMoneyActive then
             pcall(function()
-                local CollectionMachine =
-                    ReplicatedStorage
-                    :WaitForChild("Remotes")
-                    :WaitForChild("CollectionMachine")
-
-                CollectionMachine:FireServer()
+                if CollectionMachineRemote then
+                    CollectionMachineRemote:FireServer()
+                else
+                    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CollectionMachine"):FireServer()
+                end
             end)
-
             task.wait(30)
         else
-            task.wait(1)
+            task.wait(0.5)
         end
     end
 end)
+
 --------------------------------------------------------------------------------
 -- TAB 2: CRAFTING
 --------------------------------------------------------------------------------
